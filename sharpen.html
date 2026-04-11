@@ -15,7 +15,6 @@
             color: #0087f7; 
         }
         
-        /* Home Button Styles */
         .home-nav { display: flex; justify-content: flex-start; margin-bottom: 20px; }
         .home-link { 
             display: inline-flex; 
@@ -28,14 +27,12 @@
         }
         .home-link img { width: 28px; height: auto; filter: invert(1); }
 
-        /* Mobile First Layout (Vertical Stack) */
         .main-layout { 
             display: flex; 
             flex-direction: column; 
             gap: 20px; 
         }
 
-        /* Desktop Layout (Side-by-Side) */
         @media (min-width: 850px) {
             .main-layout { flex-direction: row; align-items: flex-start; }
             .player-section { flex: 2; position: sticky; top: 20px; }
@@ -60,11 +57,10 @@
         .input-group { margin-bottom: 20px; }
         label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 14px; }
         
-        /* Improved touch targets for mobile */
         input[type="file"], input[type="number"], select { 
             width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #0069be; 
             border-radius: 6px; box-sizing: border-box; background: #21262d; color: white; 
-            font-size: 16px; /* Prevents iOS auto-zoom on focus */
+            font-size: 16px;
         }
 
         input[type="range"] { width: 100%; height: 25px; cursor: pointer; }
@@ -107,6 +103,32 @@
         canvas { width: 100%; height: auto; border-radius: 6px; background: #000; border: 1px solid #30363d; display: block; }
         .slider-label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; color: #8b949e; }
         #log { margin-top: 15px; padding: 12px; background: #000; color: #58a6ff; font-family: monospace; border-radius: 6px; font-size: 12px; border: 1px solid #30363d; }
+
+        /* Format selector */
+        .format-toggle {
+            display: flex; gap: 8px; margin-bottom: 10px;
+        }
+        .format-btn {
+            flex: 1; padding: 8px; border-radius: 6px; border: 1px solid #30363d;
+            background: #21262d; color: #8b949e; cursor: pointer; font-size: 13px;
+            font-weight: bold; transition: 0.2s; text-align: center;
+        }
+        .format-btn.active {
+            background: #0d2340; border-color: #0087f7; color: #0087f7;
+        }
+        .format-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        /* Progress bar */
+        #progressWrap { display: none; margin-top: 10px; }
+        #progressBar {
+            width: 100%; height: 6px; background: #21262d; border-radius: 3px; overflow: hidden;
+        }
+        #progressFill {
+            height: 100%; width: 0%; background: #0087f7;
+            transition: width 0.3s ease;
+            border-radius: 3px;
+        }
+        #progressLabel { font-size: 11px; color: #8b949e; margin-top: 4px; }
     </style>
 </head>
 <body>
@@ -122,9 +144,13 @@
         <canvas id="outputCanvas"></canvas>
         <div style="margin-top: 15px;">
             <div class="slider-label"><span>Seek Bar</span><span id="timeVal">0:00 / 0:00</span></div>
-            <input type="range" id="seekSlider" class="lockable" value="0" step="0.01" disabled>
+            <input type="range" id="seekSlider" class="lockable" value="0" min="0" step="any" disabled>
         </div>
         <div id="log">Status: Idle. Upload a video to begin.</div>
+        <div id="progressWrap">
+            <div id="progressBar"><div id="progressFill"></div></div>
+            <div id="progressLabel"></div>
+        </div>
     </div>
 
     <div class="controls-section">
@@ -160,17 +186,23 @@
 
             <div id="passCountContainer">
                 <label>Number of Passes</label>
-                <input type="number" id="passCount" class="lockable" value="1" min="1" step="1" disabled>
+                <input type="number" id="passCount" class="lockable" value="1" min="1" max="8" step="1" disabled>
             </div>
         </div>
 
         <div class="input-group">
             <label>4. Output & Playback</label>
-            <div class="slider-label"><span>Bitrate (Mbps)</span></div>
+            <div class="slider-label"><span>Bitrate (Mbps)</span><span id="detectedInfo" style="color:#58a6ff;">—</span></div>
             <input type="number" id="bitrateInput" class="lockable" value="50" min="1" max="200" disabled>
             
             <div class="slider-label"><span>Audio Volume</span></div>
             <input type="range" id="volumeSlider" class="lockable" min="0" max="1" step="0.01" value="1" disabled>
+
+            <label style="margin-top: 10px;">Export Format</label>
+            <div class="format-toggle">
+                <div class="format-btn active lockable" id="fmtWebm" data-fmt="webm">WebM</div>
+                <div class="format-btn lockable" id="fmtMp4" data-fmt="mp4">MP4 (Very Slow!)</div>
+            </div>
             
             <div class="btn-group">
                 <button id="playPauseBtn" class="lockable" disabled>Play</button>
@@ -182,11 +214,15 @@
 
 <video id="inputVideo" hidden crossorigin="anonymous" playsinline webkit-playsinline></video>
 
+<!-- FFmpeg.wasm v0.12 (self-contained, no SharedArrayBuffer required) -->
+<script src="ffmpeg.js"></script>
+<script src="index.js"></script>
+
 <script>
     const video = document.getElementById('inputVideo');
     const canvas = document.getElementById('outputCanvas');
-    const gl = canvas.getContext('webgl', { preserveDrawingBuffer: true });
-    
+    const gl = canvas.getContext('webgl', { preserveDrawingBuffer: true, antialias: false });
+
     const seekSlider = document.getElementById('seekSlider');
     const volumeSlider = document.getElementById('volumeSlider');
     const playPauseBtn = document.getElementById('playPauseBtn');
@@ -199,12 +235,126 @@
     const multiPassToggle = document.getElementById('multiPassToggle');
     const methodSelect = document.getElementById('methodSelect');
     const log = document.getElementById('log');
-    
+    const progressWrap = document.getElementById('progressWrap');
+    const progressFill = document.getElementById('progressFill');
+    const progressLabel = document.getElementById('progressLabel');
+
     const lockables = document.querySelectorAll('.lockable');
 
+    let selectedFormat = 'webm'; 
+    document.querySelectorAll('.format-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (btn.classList.contains('lockable') && btn.disabled) return;
+            document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedFormat = btn.dataset.fmt;
+        });
+    });
+
+    let ffmpegLoaded = false;
+    let ffmpegInstance = null;
+
+    async function getFFmpeg() {
+        if (ffmpegLoaded) return ffmpegInstance;
+        const { FFmpeg } = FFmpegWASM;
+        ffmpegInstance = new FFmpeg();
+        ffmpegInstance.on('progress', ({ progress }) => {
+            const pct = Math.round(progress * 100);
+            progressFill.style.width = pct + '%';
+            progressLabel.textContent = `Converting to MP4… ${pct}%`;
+        });
+        ffmpegInstance.on('log', ({ message }) => {
+            console.log('[ffmpeg]', message);
+        });
+        log.textContent = 'Status: Loading FFmpeg (first MP4 export only)…';
+        await ffmpegInstance.load({
+            coreURL: 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd/ffmpeg-core.js',
+        });
+        ffmpegLoaded = true;
+        log.textContent = 'Status: FFmpeg ready.';
+        return ffmpegInstance;
+    }
+
+    async function convertToMp4(webmBlob, targetBitrateMbps) {
+        const ff = await getFFmpeg();
+        const { fetchFile } = FFmpegUtil;
+
+        progressWrap.style.display = 'block';
+        progressFill.style.width = '0%';
+        progressLabel.textContent = 'Converting to MP4… 0%';
+
+        await ff.writeFile('input.webm', await fetchFile(webmBlob));
+
+        const bitrateStr = `${targetBitrateMbps}M`;
+        await ff.exec([
+            '-i', 'input.webm',
+            '-c:v', 'libx264',
+            '-preset', 'fast',
+            '-b:v', bitrateStr,
+            '-c:a', 'aac',
+            '-b:a', '192k',
+            '-movflags', '+faststart',
+            'output.mp4'
+        ]);
+
+        const data = await ff.readFile('output.mp4');
+        await ff.deleteFile('input.webm');
+        await ff.deleteFile('output.mp4');
+
+        progressWrap.style.display = 'none';
+        return new Blob([data.buffer], { type: 'video/mp4' });
+    }
+
+    // ---- WebGL setup ----
     let recorder, recordedChunks = [], isRecording = false;
     let fb1, fb2, tex1, tex2;
     let audioCtx, source, streamDest;
+    let rafId = null;
+    let videoReady = false;
+    let cachedWidth = 0, cachedHeight = 0;
+    let detectedFps = 30;
+    let currentFile = null;
+
+    function detectFrameRate() {
+        return new Promise(resolve => {
+            if (typeof video.requestVideoFrameCallback === 'function') {
+                let lastTime = null, intervals = [], frameCount = 0;
+                const MAX_SAMPLES = 30;
+                function onFrame(_, meta) {
+                    if (lastTime !== null) intervals.push(meta.mediaTime - lastTime);
+                    lastTime = meta.mediaTime;
+                    frameCount++;
+                    if (frameCount < MAX_SAMPLES) {
+                        video.requestVideoFrameCallback(onFrame);
+                    } else {
+                        video.pause();
+                        video.currentTime = 0;
+                        const avg = intervals.length ? intervals.reduce((a,b)=>a+b,0)/intervals.length : 0;
+                        resolve(avg > 0 ? Math.round(1 / avg) : 30);
+                    }
+                }
+                video.currentTime = 0;
+                video.muted = true;
+                video.play().then(() => video.requestVideoFrameCallback(onFrame)).catch(() => resolve(30));
+            } else {
+                let frames = 0, lastVT = -1;
+                const start = performance.now();
+                function tick() {
+                    if (video.currentTime !== lastVT) { frames++; lastVT = video.currentTime; }
+                    if (performance.now() - start < 1000) { requestAnimationFrame(tick); }
+                    else { video.pause(); video.currentTime = 0; resolve(Math.max(1, frames)); }
+                }
+                video.currentTime = 0;
+                video.muted = true;
+                video.play().then(() => requestAnimationFrame(tick)).catch(() => resolve(30));
+            }
+        });
+    }
+
+    function estimateBitrateMbps(file, duration) {
+        if (!duration || duration <= 0) return 50;
+        return Math.max(1, Math.round((file.size * 8) / duration / 1_000_000));
+    }
 
     const vs = `
         attribute vec2 a_p; attribute vec2 a_t; varying vec2 v_t; uniform bool u_flip;
@@ -222,28 +372,28 @@
         void main(){
             vec2 p = 1.0 / u_s;
             vec4 central = texture2D(u_i, v_t);
-            
+
             vec4 colorAcc = central;
             float weightAcc = 1.0;
             if(u_d > 0.01) {
                 for(int i=-1; i<=1; i++){
                     for(int j=-1; j<=1; j++){
                         if(i==0 && j==0) continue;
-                        vec4 sample = texture2D(u_i, v_t + vec2(float(i), float(j)) * p);
-                        float dist = distance(central.rgb, sample.rgb);
+                        vec4 samp = texture2D(u_i, v_t + vec2(float(i), float(j)) * p);
+                        float dist = distance(central.rgb, samp.rgb);
                         float weight = max(0.0, 1.0 - (dist / (u_d * 0.5)));
-                        colorAcc += sample * weight;
+                        colorAcc += samp * weight;
                         weightAcc += weight;
                     }
                 }
             }
             vec4 clean = colorAcc / weightAcc;
 
-            vec4 n = texture2D(u_i, v_t + vec2(0.,-p.y)) + 
-                     texture2D(u_i, v_t + vec2(0.,p.y)) + 
-                     texture2D(u_i, v_t + vec2(-p.x,0.)) + 
+            vec4 n = texture2D(u_i, v_t + vec2(0.,-p.y)) +
+                     texture2D(u_i, v_t + vec2(0.,p.y)) +
+                     texture2D(u_i, v_t + vec2(-p.x,0.)) +
                      texture2D(u_i, v_t + vec2(p.x,0.));
-            
+
             vec4 res;
             if(u_m == 0) res = clean * (5.0 + u_a) + n * -1.0;
             else if(u_m == 1) res = clean * (1.0 + u_a) + n * -0.25 * u_a;
@@ -252,15 +402,39 @@
             gl_FragColor = vec4(res.rgb, 1.0);
         }`;
 
-    function buildShader(t, s){const sh=gl.createShader(t); gl.shaderSource(sh,s); gl.compileShader(sh); return sh;}
+    function buildShader(t, s) {
+        const sh = gl.createShader(t);
+        gl.shaderSource(sh, s);
+        gl.compileShader(sh);
+        if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+            console.error('Shader error:', gl.getShaderInfoLog(sh));
+        }
+        return sh;
+    }
+
     const prog = gl.createProgram();
     gl.attachShader(prog, buildShader(gl.VERTEX_SHADER, vs));
     gl.attachShader(prog, buildShader(gl.FRAGMENT_SHADER, fs));
-    gl.linkProgram(prog); gl.useProgram(prog);
+    gl.linkProgram(prog);
+    gl.useProgram(prog);
 
-    const b = (d, l) => { const buf=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(d), gl.STATIC_DRAW); gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l, 2, gl.FLOAT, false, 0, 0); };
-    b([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1], gl.getAttribLocation(prog, "a_p"));
-    b([0,1, 1,1, 0,0, 0,0, 1,1, 1,0], gl.getAttribLocation(prog, "a_t"));
+    const makeBuffer = (data, attrib) => {
+        const buf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
+        gl.enableVertexAttribArray(attrib);
+        gl.vertexAttribPointer(attrib, 2, gl.FLOAT, false, 0, 0);
+    };
+    makeBuffer([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1], gl.getAttribLocation(prog, "a_p"));
+    makeBuffer([0,1, 1,1, 0,0, 0,0, 1,1, 1,0], gl.getAttribLocation(prog, "a_t"));
+
+    const uLoc = {
+        flip: gl.getUniformLocation(prog, "u_flip"),
+        size: gl.getUniformLocation(prog, "u_s"),
+        amount: gl.getUniformLocation(prog, "u_a"),
+        denoise: gl.getUniformLocation(prog, "u_d"),
+        method: gl.getUniformLocation(prog, "u_m"),
+    };
 
     function createTex(w, h) {
         const t = gl.createTexture();
@@ -269,6 +443,7 @@
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
         return t;
     }
 
@@ -277,6 +452,14 @@
         gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
         gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
         return fb;
+    }
+
+    function freeGLResources() {
+        if (tex1) { gl.deleteTexture(tex1); tex1 = null; }
+        if (tex2) { gl.deleteTexture(tex2); tex2 = null; }
+        if (fb1) { gl.deleteFramebuffer(fb1); fb1 = null; }
+        if (fb2) { gl.deleteFramebuffer(fb2); fb2 = null; }
+        cachedWidth = 0; cachedHeight = 0;
     }
 
     function toggleGlobalLock(shouldLock) {
@@ -291,71 +474,121 @@
         passInput.disabled = !multiPassToggle.checked;
     };
 
-    document.getElementById('videoUpload').onchange = (e) => {
+    document.getElementById('videoUpload').onchange = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
+
+        if (source) { try { source.disconnect(); } catch(_) {} source = null; }
         if (audioCtx) { audioCtx.close(); audioCtx = null; }
+        streamDest = null;
+
+        videoReady = false;
+        freeGLResources();
+        currentFile = file;
+
         video.src = URL.createObjectURL(file);
-        video.onloadedmetadata = () => {
-            seekSlider.max = video.duration;
-            toggleGlobalLock(false);
-            log.textContent = "Status: Ready";
-            tex1 = createTex(video.videoWidth, video.videoHeight);
-            tex2 = createTex(video.videoWidth, video.videoHeight);
-            fb1 = createFB(tex1);
-            fb2 = createFB(tex2);
-        };
+
+        await new Promise(r => { video.onloadedmetadata = r; });
+
+        log.textContent = "Status: Detecting frame rate…";
+        const fps = await detectFrameRate();
+        detectedFps = fps;
+
+        video.muted = false;
+        video.currentTime = 0;
+
+        const estimatedMbps = estimateBitrateMbps(file, video.duration);
+        bitrateInput.value = estimatedMbps;
+        document.getElementById('detectedInfo').textContent =
+            `detected: ${fps} fps · ~${estimatedMbps} Mbps`;
+
+        seekSlider.max = video.duration;
+        toggleGlobalLock(false);
+        log.textContent = "Status: Ready";
+
+        const w = video.videoWidth;
+        const h = video.videoHeight;
+        canvas.width = w;
+        canvas.height = h;
+        cachedWidth = w;
+        cachedHeight = h;
+        gl.viewport(0, 0, w, h);
+
+        tex1 = createTex(w, h);
+        tex2 = createTex(w, h);
+        fb1 = createFB(tex1);
+        fb2 = createFB(tex2);
+
+        videoReady = true;
+        startRenderLoop();
     };
 
     playPauseBtn.onclick = () => {
-        if (video.paused) { video.play(); playPauseBtn.textContent = "Pause"; } 
-        else { video.pause(); playPauseBtn.textContent = "Play"; }
+        if (video.paused) {
+            video.play();
+            playPauseBtn.textContent = "Pause";
+            startRenderLoop();
+        } else {
+            video.pause();
+            playPauseBtn.textContent = "Play";
+        }
     };
 
-    seekSlider.oninput = () => { video.currentTime = seekSlider.value; };
-    volumeSlider.oninput = () => { video.volume = volumeSlider.value; };
+    seekSlider.oninput = () => { video.currentTime = parseFloat(seekSlider.value); };
+    volumeSlider.oninput = () => { video.volume = parseFloat(volumeSlider.value); };
     amountSlider.oninput = () => { document.getElementById('amountVal').textContent = amountSlider.value + "%"; };
     denoiseSlider.oninput = () => { document.getElementById('denoiseVal').textContent = denoiseSlider.value + "%"; };
 
     video.ontimeupdate = () => {
         seekSlider.value = video.currentTime;
-        document.getElementById('timeVal').textContent = `${Math.floor(video.currentTime)}s / ${Math.floor(video.duration)}s`;
+        const cur = Math.floor(video.currentTime);
+        const dur = Math.floor(video.duration) || 0;
+        document.getElementById('timeVal').textContent = `${cur}s / ${dur}s`;
     };
 
-    video.onended = () => { 
+    video.onended = () => {
         playPauseBtn.textContent = "Play";
-        if (isRecording) stopRecording(); 
+        if (isRecording) stopRecording();
     };
 
-    function render() {
-        if (video.readyState >= video.HAVE_CURRENT_DATA) {
-            if (canvas.width !== video.videoWidth) {
-                canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-                gl.viewport(0, 0, canvas.width, canvas.height);
-            }
-            const isMulti = multiPassToggle.checked;
-            const passes = isMulti ? Math.max(1, parseInt(passInput.value) || 1) : 1;
-            const flipLoc = gl.getUniformLocation(prog, "u_flip");
+    function renderFrame() {
+        if (!videoReady || video.readyState < video.HAVE_CURRENT_DATA) return;
 
-            gl.bindTexture(gl.TEXTURE_2D, tex1);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
-            
-            gl.uniform2f(gl.getUniformLocation(prog, "u_s"), canvas.width, canvas.height);
-            gl.uniform1f(gl.getUniformLocation(prog, "u_a"), amountSlider.value / 20.0);
-            gl.uniform1f(gl.getUniformLocation(prog, "u_d"), denoiseSlider.value / 100.0);
-            gl.uniform1i(gl.getUniformLocation(prog, "u_m"), parseInt(methodSelect.value));
+        const isMulti = multiPassToggle.checked;
+        const passes = isMulti ? Math.min(8, Math.max(1, parseInt(passInput.value, 10) || 1)) : 1;
 
-            for (let i = 0; i < passes; i++) {
-                const isLast = (i === passes - 1);
-                gl.uniform1i(flipLoc, (isMulti && !isLast) ? 1 : 0);
-                gl.bindFramebuffer(gl.FRAMEBUFFER, isLast ? null : (i % 2 === 0 ? fb2 : fb1));
-                gl.bindTexture(gl.TEXTURE_2D, i % 2 === 0 ? tex1 : tex2);
-                gl.drawArrays(gl.TRIANGLES, 0, 6);
-            }
+        gl.bindTexture(gl.TEXTURE_2D, tex1);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
+
+        gl.uniform2f(uLoc.size, cachedWidth, cachedHeight);
+        gl.uniform1f(uLoc.amount, amountSlider.value / 20.0);
+        gl.uniform1f(uLoc.denoise, denoiseSlider.value / 100.0);
+        gl.uniform1i(uLoc.method, parseInt(methodSelect.value, 10));
+
+        for (let i = 0; i < passes; i++) {
+            const isLast = (i === passes - 1);
+            gl.uniform1i(uLoc.flip, (!isLast && isMulti) ? 1 : 0);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, isLast ? null : (i % 2 === 0 ? fb2 : fb1));
+            gl.bindTexture(gl.TEXTURE_2D, i % 2 === 0 ? tex1 : tex2);
+            gl.drawArrays(gl.TRIANGLES, 0, 6);
         }
-        requestAnimationFrame(render);
     }
-    render();
+
+    function startRenderLoop() {
+        if (rafId !== null) return;
+        function loop() {
+            renderFrame();
+            rafId = requestAnimationFrame(loop);
+        }
+        rafId = requestAnimationFrame(loop);
+    }
+
+    function stopRenderLoop() {
+        if (rafId !== null) {
+            cancelAnimationFrame(rafId);
+            rafId = null;
+        }
+    }
 
     function stopRecording() {
         if (!isRecording) return;
@@ -367,58 +600,106 @@
         recordBtn.classList.remove('recording');
     }
 
-    recordBtn.onclick = async () => {
-        if (!isRecording) {
-            try {
-                recordedChunks = [];
-                toggleGlobalLock(true);
-                recordBtn.disabled = false; 
-                video.currentTime = 0;
-                video.volume = 1.0;
-                volumeSlider.value = 1.0;
-                await new Promise(r => video.onseeked = r);
-
-                if (!audioCtx) {
-                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                    source = audioCtx.createMediaElementSource(video);
-                    streamDest = audioCtx.createMediaStreamDestination();
-                    source.connect(streamDest);
-                    source.connect(audioCtx.destination);
-                }
-                if (audioCtx.state === 'suspended') await audioCtx.resume();
-
-                const vStream = canvas.captureStream(60); 
-                const combined = new MediaStream([...vStream.getVideoTracks(), ...streamDest.stream.getAudioTracks()]);
-                const targetBitrate = (parseInt(bitrateInput.value) || 50) * 1000000;
-
-                // For better iOS compatibility, check if webm is supported, otherwise fallback
-                const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') 
-                                 ? 'video/webm;codecs=vp9' 
-                                 : 'video/mp4';
-
-                recorder = new MediaRecorder(combined, { mimeType, videoBitsPerSecond: targetBitrate });
-                recorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
-                recorder.onstop = () => {
-                    const extension = mimeType.includes('webm') ? 'webm' : 'mp4';
-                    const blob = new Blob(recordedChunks, { type: `video/${extension}` });
-                    const url = URL.createObjectURL(blob);
-                    log.innerHTML = `Status: Complete. <a href="${url}" download="enhanced.${extension}" style="color: #58a6ff; text-decoration: underline;">Download Result</a>`;
-                    toggleGlobalLock(false);
-                };
-                recorder.start();
-                video.play();
-                isRecording = true;
-                recordBtn.textContent = "Stop Rendering";
-                recordBtn.classList.add('recording');
-                log.textContent = "Status: Rendering";
-            } catch (err) {
-                log.textContent = "Error: " + err.message;
-                toggleGlobalLock(false);
-            }
-        } else {
-            stopRecording();
+    function pickMimeType() {
+        const candidates = [
+            'video/webm;codecs=vp9',
+            'video/webm;codecs=vp8',
+            'video/webm',
+        ];
+        for (const t of candidates) {
+            if (MediaRecorder.isTypeSupported(t)) return t;
         }
+        return '';
+    }
+
+    recordBtn.onclick = async () => {
+    if (isRecording) return;
+
+    try {
+        isRecording = true;
+        recordedChunks = [];
+        toggleGlobalLock(true);
+        
+        // 1. Prepare Audio Context
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            source = audioCtx.createMediaElementSource(video);
+            streamDest = audioCtx.createMediaStreamDestination();
+            source.connect(streamDest);
+            source.connect(audioCtx.destination);
+        }
+        if (audioCtx.state === 'suspended') await audioCtx.resume();
+
+        // 2. Setup Stream
+        const vStream = canvas.captureStream(detectedFps);
+        const combined = new MediaStream([
+            ...vStream.getVideoTracks(), 
+            ...streamDest.stream.getAudioTracks()
+        ]);
+
+        const targetBitrate = (parseInt(bitrateInput.value, 10) || 50) * 1_000_000;
+        const mimeType = pickMimeType();
+        
+        recorder = new MediaRecorder(combined, {
+            mimeType: mimeType,
+            videoBitsPerSecond: targetBitrate
+        });
+
+        recorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+
+        recorder.onstop = async () => {
+    log.textContent = "Status: Fixing playback speed...";
+    const webmBlob = new Blob(recordedChunks, { type: mimeType });
+    const ff = await getFFmpeg();
+    const { fetchFile } = FFmpegUtil;
+
+    await ff.writeFile('slow.webm', await fetchFile(webmBlob));
+
+    const speedFactor = video.playbackRate; 
+    const ptsFilter = `setpts=${speedFactor}*PTS`;
+    const audioFilter = `atempo=${1/speedFactor}`; 
+
+    log.textContent = "Status: Re-encoding to original speed...";
+    
+    await ff.exec([
+        '-i', 'slow.webm',
+        '-filter:v', ptsFilter,
+        '-filter:a', audioFilter,
+        '-c:v', selectedFormat === 'mp4' ? 'libx264' : 'libvpx-vp9',
+        '-b:v', `${bitrateInput.value}M`,
+        'output_final.' + (selectedFormat === 'mp4' ? 'mp4' : 'webm')
+    ]);
+
+    const data = await ff.readFile('output_final.' + (selectedFormat === 'mp4' ? 'mp4' : 'webm'));
+    const finalBlob = new Blob([data.buffer], { type: `video/${selectedFormat}` });
+    
+    const url = URL.createObjectURL(finalBlob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = `enhanced_fixed_${Date.now()}.${selectedFormat}`;
+    anchor.click();
+
+    // Cleanup
+    await ff.deleteFile('slow.webm');
+    log.innerHTML = `Status: Complete! <a href="${url}" download>Download</a>`;
+    video.playbackRate = 1.0; 
+    toggleGlobalLock(false);
     };
+
+        video.currentTime = 0;
+        video.playbackRate = 0.2;
+        
+        log.textContent = "Status: Rendering at high precision (Slow-mo mode)...";
+        recorder.start();
+        video.play();
+        startRenderLoop();
+
+    } catch (err) {
+        console.error(err);
+        log.textContent = "Error: " + err.message;
+        toggleGlobalLock(false);
+    }
+};
 </script>
 </body>
 </html>
