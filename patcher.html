@@ -10,15 +10,27 @@
         .input-group { margin-bottom: 20px; }
         label { display: block; font-weight: bold; margin-bottom: 5px; }
         input[type="file"], input[type="number"] { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #0069be; border-radius: 4px; box-sizing: border-box; background: #454a50}
-        button { background: #006dcc; color: #ffffff; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; }
-        button:hover { background: #454a50; }
+        button { background: #006dcc; color: #ffffff; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; transition: background 0.5s }
+        button:hover { background: #454a50; transition: background 0.5s }
         #log { margin-top: 20px; padding: 15px; background: #0f0c0c; color: #0087f7; font-family: monospace; border-radius: 6px; white-space: pre-wrap; display: none; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>MP4 Patcher (Local)</h2>
+<style>
+    .home-nav {display: flex;justify-content: flex-start;max-width: 860px; margin: 0 auto 10px auto;}
+    .home-link {display: inline-flex; align-items: center;padding: 8px;border-radius: 8px;background: #0d1117;border: 1px solid #0069be; transition: background 0.3s;text-decoration: none;}
+    .home-link:hover {background: #161b22;border-color: #0087f7;}
+    .home-link img { width: 32px; height: auto;filter: invert(1)}
+</style>
+
+<div class="home-nav">
+    <a href="index.html" class="home-link">
+        <img src="logo/home.png" alt="Home">
+    </a>
+</div>
+    <h2>MP4 Patcher</h2>
     <p></p>
 
     <div class="input-group">
