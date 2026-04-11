@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>voxzymi</title>
     <style>
-        body { font-family: sans-serif; line-height: 1.5; max-width: 800px; margin: 40px auto; padding: 20px; background: #010409; color: #0087f7 }
+        body { font-family: sans-serif; line-height: 1.5; max-width: 900px; margin: 40px auto; padding: 20px; background: #010409; color: #0087f7 }
         .container { background: #0d1117; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(88, 88, 88);}
         
+        /* Changed to grid for better organization with many buttons */
         .link-list {
-            display: flex;
-            flex-direction: column; 
-            gap: 12px;             
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 12px;            
             margin-top: 20px;
         }
 
@@ -30,23 +31,26 @@
         .card:hover {
             background: #454a50; 
             border-color: #006dcc;
-            transform: translateX(5px); 
+            transform: translateY(-3px); 
         }
 
         .card h3 {
             margin: 0 0 4px 0;
             color: #0087f7;
-            font-size: 1.2em;
+            font-size: 1.1em;
         }
 
         .card p {
             margin: 0;
-            font-size: 0.9em;
-            color: #0087f7;
+            font-size: 0.85em;
+            color: #58a6ff;
+            opacity: 0.8;
         }
+
         @media (max-width: 600px) {
             .container { padding: 15px; }
             body { margin: 10px auto; }
+            .link-list { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -66,9 +70,54 @@
                 <p>Enhance your Video Quality!</p>
             </a>
 
-            <a href="https://cdn.discordapp.com/attachments/1221838379365302282/1489936667828555980/convert.ac93e6f4.gif?ex=69dacce7&is=69d97b67&hm=19b3ac11aade51a2e69bcfb211badd2ffdd9e62ba800853108b93415d19f1725&" class="card">
-                <h3>work in progress</h3>
-                <p>work in progress</p>
+            <a href="#" class="card">
+                <h3>Work in progress</h3>
+                <p>Work in progress</p>
+            </a>
+
+            <a href="#" class="card">
+                <h3>Work in progress</h3>
+                <p>Work in progress</p>
+            </a>
+
+            <a href="#" class="card">
+                <h3>Work in progress</h3>
+                <p>Work in progress</p>
+            </a>
+
+            <a href="#" class="card">
+                <h3>Work in progress</h3>
+                <p>Work in progress</p>
+            </a>
+
+            <a href="#" class="card">
+                <h3>Work in progress</h3>
+                <p>Work in progress</p>
+            </a>
+
+            <a href="#" class="card">
+                <h3>Work in progress</h3>
+                <p>Work in progress</p>
+            </a>
+
+            <a href="#" class="card">
+                <h3>Work in progress</h3>
+                <p>Work in progress</p>
+            </a>
+
+            <a href="#" class="card">
+                <h3>Work in progress</h3>
+                <p>Work in progress</p>
+            </a>
+
+            <a href="#" class="card">
+                <h3>Work in progress</h3>
+                <p>Work in progress</p>
+            </a>
+
+            <a href="#" class="card">
+                <h3>Work in progress</h3>
+                <p>Work in progress</p>
             </a>
         </div>
     </div>
