@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>voxzymi</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.5; max-width: 1100px; margin: 40px auto; padding: 20px; background: #010409; color: #0087f7 }
+        
+        /* Home Button Styles */
+        .home-nav { display: flex; justify-content: flex-start; max-width: 1100px; margin: 0 auto 20px auto; }
+        .home-link { display: inline-flex; align-items: center; padding: 8px; border-radius: 8px; background: #0d1117; border: 1px solid #0069be; transition: background 0.3s; text-decoration: none; }
+        .home-link:hover { background: #161b22; border-color: #0087f7; }
+        .home-link img { width: 32px; height: auto; filter: invert(1) }
+
+        .main-layout { display: flex; gap: 20px; align-items: flex-start; }
+        .player-section { flex: 2; background: #0d1117; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(88, 88, 88, 0.3); }
+        .controls-section { flex: 1; background: #0d1117; padding: 20px; border-radius: 8px; border: 1px solid #30363d; position: sticky; top: 20px; }
+        .input-group { margin-bottom: 20px; }
+        label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 14px; }
+        input[type="file"], input[type="range"], input[type="number"], select { 
+            width: 100%; padding: 8px; margin-bottom: 10px; border: 1px solid #0069be; 
+            border-radius: 4px; box-sizing: border-box; background: #454a50; color: white; 
+        }
+        .lockable:disabled, input[type="range"]:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
+        .switch-group { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; background: #161b22; padding: 10px; border-radius: 4px; border: 1px solid #30363d; }
+        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider-toggle { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #30363d; transition: .4s; border-radius: 20px; }
+        .slider-toggle:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider-toggle { background-color: #0087f7; }
+        input:checked + .slider-toggle:before { transform: translateX(20px); }
+        #passCountContainer { display: none; margin-top: 10px; border-left: 2px solid #0087f7; padding-left: 10px; }
+        .btn-group { display: flex; gap: 10px; }
+        button { background: #006dcc; color: #ffffff; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-size: 13px; flex: 1; font-weight: bold; }
+        button:hover { background: #1a8ff5; }
+        button:disabled { background: #21262d; color: #8b949e; cursor: not-allowed; }
+        #recordBtn.recording { background: #da3633; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        canvas { width: 100%; border-radius: 4px; background: #000; border: 1px solid #30363d; }
+        .slider-label { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; color: #8b949e; }
+        #log { margin-top: 15px; padding: 10px; background: #000; color: #58a6ff; font-family: monospace; border-radius: 6px; font-size: 11px; border: 1px solid #30363d; overflow-wrap: break-word; }
+    </style>
+</head>
+<body>
+
+<div class="home-nav">
+    <a href="index.html" class="home-link">
+        <img src="logo/home.png" alt="Home">
+    </a>
+</div>
+
+<div class="main-layout">
+    
+    <div class="player-section">
+        <canvas id="outputCanvas"></canvas>
+        <div style="margin-top: 15px;">
+            <div class="slider-label"><span>Seek Bar</span><span id="timeVal">0:00 / 0:00</span></div>
+            <input type="range" id="seekSlider" class="lockable" value="0" step="0.01" disabled>
+        </div>
+        <div id="log">Status: Idle. Please upload a video.</div>
+    </div>
+
+    <div class="controls-section">
+        <div class="input-group">
+            <label>1. Select Video</label>
+            <input type="file" id="videoUpload" accept="video/*">
+        </div>
+
+        <div class="input-group">
+            <label>2. Denoising (Pre-Process)</label>
+            <div class="slider-label"><span>Denoise Strength</span><span id="denoiseVal">0%</span></div>
+            <input type="range" id="denoiseAmount" class="lockable" min="0" max="100" value="0" disabled>
+        </div>
+
+        <div class="input-group">
+            <label>3. Sharpening Settings</label>
+            <select id="methodSelect" class="lockable" disabled>
+                <option value="0">Standard Sharpen</option>
+                <option value="1">Laplacian Contrast</option>
+                <option value="2">Edge Enhance</option>
+            </select>
+            
+            <div class="slider-label"><span>Sharpen Intensity</span><span id="amountVal">0%</span></div>
+            <input type="range" id="sharpenAmount" class="lockable" min="0" max="100" value="0" disabled>
+
+            <div class="switch-group">
+                <span style="font-size: 13px; font-weight: bold;">Enable Multi-Pass</span>
+                <label class="switch">
+                    <input type="checkbox" id="multiPassToggle" class="lockable" disabled>
+                    <span class="slider-toggle"></span>
+                </label>
+            </div>
+
+            <div id="passCountContainer">
+                <label>Passes</label>
+                <input type="number" id="passCount" class="lockable" value="1" min="1" step="1" disabled>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>4. Output Settings</label>
+            <label style="font-size: 11px; color: #8b949e;">Bitrate (Mbps)</label>
+            <input type="number" id="bitrateInput" class="lockable" value="50" min="1" max="200" disabled>
+            
+            <label style="font-size: 11px; color: #8b949e;">Audio Volume</label>
+            <input type="range" id="volumeSlider" class="lockable" min="0" max="1" step="0.01" value="1" disabled>
+            
+            <div class="btn-group">
+                <button id="playPauseBtn" class="lockable" disabled>Play</button>
+                <button id="recordBtn" class="lockable" disabled>Render</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<video id="inputVideo" hidden crossorigin="anonymous"></video>
+
+<script>
+    const video = document.getElementById('inputVideo');
+    const canvas = document.getElementById('outputCanvas');
+    const gl = canvas.getContext('webgl', { preserveDrawingBuffer: true });
+    
+    const seekSlider = document.getElementById('seekSlider');
+    const volumeSlider = document.getElementById('volumeSlider');
+    const playPauseBtn = document.getElementById('playPauseBtn');
+    const recordBtn = document.getElementById('recordBtn');
+    const amountSlider = document.getElementById('sharpenAmount');
+    const denoiseSlider = document.getElementById('denoiseAmount');
+    const passInput = document.getElementById('passCount');
+    const bitrateInput = document.getElementById('bitrateInput');
+    const passCountContainer = document.getElementById('passCountContainer');
+    const multiPassToggle = document.getElementById('multiPassToggle');
+    const methodSelect = document.getElementById('methodSelect');
+    const log = document.getElementById('log');
+    
+    const lockables = document.querySelectorAll('.lockable');
+
+    let recorder, recordedChunks = [], isRecording = false;
+    let fb1, fb2, tex1, tex2;
+    let audioCtx, source, streamDest;
+
+    const vs = `
+        attribute vec2 a_p; attribute vec2 a_t; varying vec2 v_t; uniform bool u_flip;
+        void main(){ gl_Position = vec4(a_p, 0, 1); v_t = u_flip ? vec2(a_t.x, 1.0 - a_t.y) : a_t; }`;
+
+    const fs = `
+        precision mediump float;
+        uniform sampler2D u_i;
+        uniform vec2 u_s;
+        uniform float u_a;    // Sharpen amount
+        uniform float u_d;    // Denoise amount
+        uniform int u_m;      // Sharpen method
+        varying vec2 v_t;
+
+        void main(){
+            vec2 p = 1.0 / u_s;
+            vec4 central = texture2D(u_i, v_t);
+            
+            // 1. DENOISING (Bilateral-style smoothing)
+            vec4 colorAcc = central;
+            float weightAcc = 1.0;
+            if(u_d > 0.01) {
+                for(int i=-1; i<=1; i++){
+                    for(int j=-1; j<=1; j++){
+                        if(i==0 && j==0) continue;
+                        vec4 sample = texture2D(u_i, v_t + vec2(float(i), float(j)) * p);
+                        float dist = distance(central.rgb, sample.rgb);
+                        float weight = max(0.0, 1.0 - (dist / (u_d * 0.5)));
+                        colorAcc += sample * weight;
+                        weightAcc += weight;
+                    }
+                }
+            }
+            vec4 clean = colorAcc / weightAcc;
+
+            vec4 n = texture2D(u_i, v_t + vec2(0.,-p.y)) + 
+                     texture2D(u_i, v_t + vec2(0.,p.y)) + 
+                     texture2D(u_i, v_t + vec2(-p.x,0.)) + 
+                     texture2D(u_i, v_t + vec2(p.x,0.));
+            
+            vec4 res;
+            if(u_m == 0) res = clean * (5.0 + u_a) + n * -1.0;
+            else if(u_m == 1) res = clean * (1.0 + u_a) + n * -0.25 * u_a;
+            else res = clean + (clean - n * 0.25) * u_a;
+
+            gl_FragColor = vec4(res.rgb, 1.0);
+        }`;
+
+    function buildShader(t, s){const sh=gl.createShader(t); gl.shaderSource(sh,s); gl.compileShader(sh); return sh;}
+    const prog = gl.createProgram();
+    gl.attachShader(prog, buildShader(gl.VERTEX_SHADER, vs));
+    gl.attachShader(prog, buildShader(gl.FRAGMENT_SHADER, fs));
+    gl.linkProgram(prog); gl.useProgram(prog);
+
+    const b = (d, l) => { const buf=gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(d), gl.STATIC_DRAW); gl.enableVertexAttribArray(l); gl.vertexAttribPointer(l, 2, gl.FLOAT, false, 0, 0); };
+    b([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1], gl.getAttribLocation(prog, "a_p"));
+    b([0,1, 1,1, 0,0, 0,0, 1,1, 1,0], gl.getAttribLocation(prog, "a_t"));
+
+    function createTex(w, h) {
+        const t = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, t);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, w, h, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        return t;
+    }
+
+    function createFB(t) {
+        const fb = gl.createFramebuffer();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t, 0);
+        return fb;
+    }
+
+    function toggleGlobalLock(shouldLock) {
+        lockables.forEach(el => {
+            if (el.id === 'passCount' && !multiPassToggle.checked && !shouldLock) return;
+            el.disabled = shouldLock;
+        });
+    }
+
+    multiPassToggle.onchange = () => {
+        passCountContainer.style.display = multiPassToggle.checked ? "block" : "none";
+        passInput.disabled = !multiPassToggle.checked;
+    };
+
+    document.getElementById('videoUpload').onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        if (audioCtx) { audioCtx.close(); audioCtx = null; }
+        video.src = URL.createObjectURL(file);
+        video.onloadedmetadata = () => {
+            seekSlider.max = video.duration;
+            toggleGlobalLock(false);
+            log.textContent = "Status: Ready";
+            tex1 = createTex(video.videoWidth, video.videoHeight);
+            tex2 = createTex(video.videoWidth, video.videoHeight);
+            fb1 = createFB(tex1);
+            fb2 = createFB(tex2);
+        };
+    };
+
+    playPauseBtn.onclick = () => {
+        if (video.paused) { video.play(); playPauseBtn.textContent = "Pause"; } 
+        else { video.pause(); playPauseBtn.textContent = "Play"; }
+    };
+
+    seekSlider.oninput = () => { video.currentTime = seekSlider.value; };
+    volumeSlider.oninput = () => { video.volume = volumeSlider.value; };
+    amountSlider.oninput = () => { document.getElementById('amountVal').textContent = amountSlider.value + "%"; };
+    denoiseSlider.oninput = () => { document.getElementById('denoiseVal').textContent = denoiseSlider.value + "%"; };
+
+    video.ontimeupdate = () => {
+        seekSlider.value = video.currentTime;
+        document.getElementById('timeVal').textContent = `${Math.floor(video.currentTime)}s / ${Math.floor(video.duration)}s`;
+    };
+
+    video.onended = () => { 
+        playPauseBtn.textContent = "Play";
+        if (isRecording) stopRecording(); 
+    };
+
+    function render() {
+        if (video.readyState >= video.HAVE_CURRENT_DATA) {
+            if (canvas.width !== video.videoWidth) {
+                canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+                gl.viewport(0, 0, canvas.width, canvas.height);
+            }
+            const isMulti = multiPassToggle.checked;
+            const passes = isMulti ? Math.max(1, parseInt(passInput.value) || 1) : 1;
+            const flipLoc = gl.getUniformLocation(prog, "u_flip");
+
+            gl.bindTexture(gl.TEXTURE_2D, tex1);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
+            
+            gl.uniform2f(gl.getUniformLocation(prog, "u_s"), canvas.width, canvas.height);
+            gl.uniform1f(gl.getUniformLocation(prog, "u_a"), amountSlider.value / 20.0);
+            gl.uniform1f(gl.getUniformLocation(prog, "u_d"), denoiseSlider.value / 100.0);
+            gl.uniform1i(gl.getUniformLocation(prog, "u_m"), parseInt(methodSelect.value));
+
+            for (let i = 0; i < passes; i++) {
+                const isLast = (i === passes - 1);
+                gl.uniform1i(flipLoc, (isMulti && !isLast) ? 1 : 0);
+                gl.bindFramebuffer(gl.FRAMEBUFFER, isLast ? null : (i % 2 === 0 ? fb2 : fb1));
+                gl.bindTexture(gl.TEXTURE_2D, i % 2 === 0 ? tex1 : tex2);
+                gl.drawArrays(gl.TRIANGLES, 0, 6);
+            }
+        }
+        requestAnimationFrame(render);
+    }
+    render();
+
+    function stopRecording() {
+        if (!isRecording) return;
+        isRecording = false;
+        if (recorder && recorder.state !== "inactive") recorder.stop();
+        video.pause();
+        playPauseBtn.textContent = "Play";
+        recordBtn.textContent = "Render";
+        recordBtn.classList.remove('recording');
+    }
+
+    recordBtn.onclick = async () => {
+        if (!isRecording) {
+            try {
+                recordedChunks = [];
+                toggleGlobalLock(true);
+                recordBtn.disabled = false; 
+                video.currentTime = 0;
+                video.volume = 1.0;
+                volumeSlider.value = 1.0;
+                await new Promise(r => video.onseeked = r);
+
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    source = audioCtx.createMediaElementSource(video);
+                    streamDest = audioCtx.createMediaStreamDestination();
+                    source.connect(streamDest);
+                    source.connect(audioCtx.destination);
+                }
+                if (audioCtx.state === 'suspended') await audioCtx.resume();
+
+                const vStream = canvas.captureStream(60); 
+                const combined = new MediaStream([...vStream.getVideoTracks(), ...streamDest.stream.getAudioTracks()]);
+                const targetBitrate = (parseInt(bitrateInput.value) || 50) * 1000000;
+
+                recorder = new MediaRecorder(combined, { mimeType: 'video/webm;codecs=vp9', videoBitsPerSecond: targetBitrate });
+                recorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+                recorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    log.innerHTML = `Status: Complete. <a href="${url}" download="enhanced.webm" style="color: #58a6ff; text-decoration: underline;">Download Result</a>`;
+                    toggleGlobalLock(false);
+                };
+                recorder.start();
+                video.play();
+                isRecording = true;
+                recordBtn.textContent = "Stop Rendering";
+                recordBtn.classList.add('recording');
+                log.textContent = "Status: Rendering";
+            } catch (err) {
+                log.textContent = "Error: " + err.message;
+                toggleGlobalLock(false);
+            }
+        } else {
+            stopRecording();
+        }
+    };
+</script>
+</body>
+</html>
