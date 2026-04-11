@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>voxzymi</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.5; max-width: 800px; margin: 40px auto; padding: 20px; background: #010409; color: #0087f7 }
+        .container { background: #0d1117; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(88, 88, 88); }
+        .input-group { margin-bottom: 20px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; }
+        input[type="file"], input[type="number"] { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #0069be; border-radius: 4px; box-sizing: border-box; background: #454a50}
+        button { background: #006dcc; color: #ffffff; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #454a50; }
+        #log { margin-top: 20px; padding: 15px; background: #0f0c0c; color: #0087f7; font-family: monospace; border-radius: 6px; white-space: pre-wrap; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>MP4 Patcher (Local)</h2>
+    <p></p>
+
+    <div class="input-group">
+        <label>Select MP4 File:</label>
+        <input type="file" id="videoFile" accept="video/mp4">
+    </div>
+
+    <div class="input-group">
+        <label>Scale Factor </label>
+        <input type="number" id="scaleFactor" step="0.1" placeholder="Leave blank for auto-adjustment">
+    </div>
+
+    <button onclick="processVideo()">Patch Video</button>
+
+    <div id="log"></div>
+</div>
+
+<script>
+    const logEl = document.getElementById('log');
+    function log(msg) {
+        logEl.style.display = 'block';
+        logEl.textContent += msg + '\n';
+    }
+
+    async function processVideo() {
+        const fileInput = document.getElementById('videoFile');
+        const scaleInput = document.getElementById('scaleFactor');
+        
+        if (!fileInput.files[0]) return alert("Please select a file first.");
+        
+        const file = fileInput.files[0];
+
+        if (!file.type.includes('video')) {
+            alert("Error: Selected file is not a video.");
+            return;
+        }
+
+        logEl.textContent = "Starting process...\n";
+        const arrayBuffer = await file.arrayBuffer();
+        const data = new Uint8Array(arrayBuffer);
+        const view = new DataView(arrayBuffer);
+
+        const signature = String.fromCharCode(data[4], data[5], data[6], data[7]);
+        if (signature !== "ftyp") {
+            alert("Error: Invalid MP4 container.");
+            return;
+        }
+
+        let totalPatched = 0;
+        const scaleFactor = parseFloat(scaleInput.value) || null;
+
+        totalPatched += patchAtom(view, data, "mvhd", scaleFactor);
+        totalPatched += patchAtom(view, data, "mdhd", scaleFactor);
+
+        log(`\nTotal patched atoms: ${totalPatched}`);
+
+        const blob = new Blob([arrayBuffer], { type: file.type });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `patched_${file.name}`;
+        a.click();
+        log(`Success! Patched file saved as: patched_${file.name}`);
+    }
+
+    function patchAtom(view, data, atomName, scaleFactor) {
+        let count = 0;
+        const atomBytes = new TextEncoder().encode(atomName);
+
+        for (let i = 0; i < data.length - 8; i++) {
+            if (data[i] === atomBytes[0] && data[i+1] === atomBytes[1] && 
+                data[i+2] === atomBytes[2] && data[i+3] === atomBytes[3]) {
+                
+                const headerOffset = i - 4;
+                if (headerOffset < 0) continue;
+
+                const boxSize = view.getUint32(headerOffset, false);
+                if (boxSize < 8) continue;
+
+                const version = view.getUint8(headerOffset + 8);
+                let timescaleOffset, durationOffset, is64Bit = false;
+
+                if (version === 0) {
+                    timescaleOffset = headerOffset + 20;
+                    durationOffset = headerOffset + 24;
+                } 
+                else if (version === 1) {
+                    timescaleOffset = headerOffset + 28;
+                    durationOffset = headerOffset + 32;
+                    is64Bit = true;
+                } else {
+                    continue;
+                }
+
+                const oldTimescale = view.getUint32(timescaleOffset, false);
+                const chosenScale = scaleFactor !== null ? scaleFactor : 0.5;
+                
+                const newTimescale = Math.floor(oldTimescale * chosenScale);
+                view.setUint32(timescaleOffset, newTimescale, false);
+
+                if (is64Bit) {
+                    const oldDuration = view.getBigUint64(durationOffset, false);
+                    const newDuration = BigInt(Math.floor(Number(oldDuration) * chosenScale));
+                    view.setBigUint64(durationOffset, newDuration, false);
+                } else {
+                    const oldDuration = view.getUint32(durationOffset, false);
+                    const newDuration = Math.floor(oldDuration * chosenScale);
+                    view.setUint32(durationOffset, newDuration, false);
+                }
+
+                log(`Patched ${atomName} at ${headerOffset}: timescale x${chosenScale.toFixed(2)}`);
+                count++;
+            }
+        }
+        return count;
+    }
+</script>
+
+</body>
+</html>
