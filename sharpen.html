@@ -521,7 +521,7 @@
         currentPasses = Math.min(maxPasses, currentPasses);
         passInput.value = currentPasses;
         toggleGlobalLock(false);
-        log.textContent = `Status: Ready — device score ${deviceScore}/4, max ${maxPasses} passes, recording speed ${Math.round(getRecordingPlaybackRate() * 100)}%`;
+        log.textContent = `Status: Ready`;
 
         const w = video.videoWidth;
         const h = video.videoHeight;

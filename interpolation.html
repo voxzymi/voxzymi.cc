@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>voxzymi</title>
+  <style>
+    body { font-family: sans-serif; line-height: 1.5; max-width: 1100px; margin: 0 auto; padding: 15px; background: #010409; color: #0087f7; }
+    .home-nav { display: flex; justify-content: flex-start; margin-bottom: 20px; }
+    .home-link { display: inline-flex; align-items: center; padding: 8px; border-radius: 8px; background: #0d1117; border: 1px solid #0069be; text-decoration: none; }
+    .home-link img { width: 28px; height: auto; filter: invert(1); }
+    .container { display: flex; flex-direction: column; gap: 20px; }
+    .panel { background: #0d1117; padding: 20px; border-radius: 12px; border: 1px solid #30363d; }
+    .panel h1 { margin: 0 0 10px; font-size: 1.6rem; }
+    .panel p { margin: 0 0 16px; color: #58a6ff; }
+    .input-group { margin-bottom: 18px; }
+    label { display: block; font-weight: bold; margin-bottom: 8px; font-size: 14px; }
+    input[type="file"], select, input[type="range"] { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #0069be; border-radius: 6px; box-sizing: border-box; background: #21262d; color: white; font-size: 15px; }
+    .display-value { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #0069be; border-radius: 6px; box-sizing: border-box; background: #161b22; color: #c9d1d9; font-size: 15px; }
+    input[type="range"] { height: 24px; cursor: pointer; }
+    .control-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    .control-row > * { flex: 1 1 180px; }
+    button { background: #006dcc; color: #ffffff; border: none; padding: 14px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: bold; transition: 0.2s; }
+    button:disabled { background: #21262d; color: #8b949e; cursor: not-allowed; }
+    button.danger { background: #8b0000; }
+    video, canvas { width: auto;height: auto;  max-height: 520px; border-radius: 10px; background: #000; border: 1px solid #30363d; display: block; }
+    .status { font-family: monospace; padding: 14px; border-radius: 8px; background: #020409; border: 1px solid #202a33; color: #58a6ff; white-space: pre-wrap; }
+    .slider-label { display: flex; justify-content: space-between; font-size: 12px; color: #8b949e; margin-bottom: 4px; }
+    .progress-bar-wrap { height: 6px; background: #21262d; border-radius: 3px; margin: 10px 0; overflow: hidden; }
+    .progress-bar { height: 100%; width: 0%; background: #006dcc; border-radius: 3px; transition: width 0.1s; }
+    @media (min-width: 900px) { .container { flex-direction: row; } .panel { flex: 1; } }
+  </style>
+</head>
+<body>
+
+<div class="home-nav">
+  <a href="index.html" class="home-link">
+    <img src="logo/home.png" alt="Home">
+  </a>
+</div>
+
+<div class="container">
+  <div class="panel">
+    <h1>Interpolation Tool</h1>
+    <p>Add more FPS to your videos using Frame Blending</p>
+
+    <div class="input-group">
+      <label for="videoUpload">Video File</label>
+      <input id="videoUpload" type="file" accept="video/*">
+    </div>
+
+    
+
+    <div class="input-group">
+      <div class="slider-label">
+        <span>Frames Between Each Pair</span>
+        <span id="extraFramesValue">1</span>
+      </div>
+      <input id="extraFrames" type="range" min="1" max="7" step="1" value="1">
+      <small style="color:#58a6ff;">
+        1 - doubles FPS, 2 - triples FPS, etc.
+      </small>
+    </div>
+
+    <div class="input-group">
+      <label for="sourceFpsDisplay">Target FPS</label>
+      <div id="sourceFpsDisplay" class="display-value">30</div>
+    </div>
+
+    <div class="input-group">
+      <label for="bitrateDisplay">Target Bitrate (Mbps)</label>
+      <div id="bitrateDisplay" class="display-value">11</div>
+    </div>
+
+    <div class="control-row" style="margin-bottom:16px;">
+      <button id="renderBtn" disabled>Render &amp; Download</button>
+      <button id="cancelBtn" disabled class="danger">Cancel</button>
+    </div>
+
+    <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="status" id="statusText">Status: Waiting for video</div>
+  </div>
+
+  <div class="panel">
+    <h1>Preview</h1>
+    <p>Original video preview.</p>
+    <video id="videoPlayer" controls playsinline></video>
+    <canvas id="workCanvas" hidden></canvas>
+  </div>
+</div>
+
+<script src="webm-muxer.js"></script>
+<script>
+  const videoUpload   = document.getElementById('videoUpload');
+  const extraFrames   = document.getElementById('extraFrames');
+  const extraFramesVal= document.getElementById('extraFramesValue');
+  const bitrateDisplay= document.getElementById('bitrateDisplay');
+  const sourceFpsDisplay = document.getElementById('sourceFpsDisplay');
+  const renderBtn     = document.getElementById('renderBtn');
+  const cancelBtn     = document.getElementById('cancelBtn');
+  const statusText    = document.getElementById('statusText');
+  const progressBar   = document.getElementById('progressBar');
+  const videoPlayer   = document.getElementById('videoPlayer');
+  const workCanvas    = document.getElementById('workCanvas');
+  const ctx           = workCanvas.getContext('2d');
+
+  const hiddenVideo = document.createElement('video');
+  hiddenVideo.playsInline = true;
+  hiddenVideo.muted = true;
+  hiddenVideo.crossOrigin = 'anonymous';
+  hiddenVideo.style.display = 'none';
+  document.body.appendChild(hiddenVideo);
+
+  let videoURL = null;
+  let cancelled = false;
+  let detectedFps = 30;
+  let originalBitrate = 50;
+  const supportsWebCodecs = typeof VideoEncoder !== 'undefined' && typeof VideoFrame !== 'undefined' && typeof WebMMuxer !== 'undefined';
+
+  function setStatus(msg) { statusText.textContent = 'Status: ' + msg; }
+  function setProgress(p) { progressBar.style.width = Math.min(100, Math.max(0, p * 100)).toFixed(1) + '%'; }
+
+  function lockButtonsAtStartup() {
+    renderBtn.disabled = true;
+    cancelBtn.disabled = true;
+    setStatus('Loading');
+
+    const unlock = () => {
+      renderBtn.disabled = !videoUpload.files.length;
+      cancelBtn.disabled = true;
+      setStatus('Waiting for video');
+    };
+
+    if (document.readyState === 'complete') {
+      unlock();
+    } else {
+      window.addEventListener('load', unlock, { once: true });
+    }
+  }
+
+  lockButtonsAtStartup();
+
+  function once(el, evt) {
+    return new Promise((resolve, reject) => {
+      const ok  = () => { el.removeEventListener(evt,   ok);  el.removeEventListener('error', err); resolve(); };
+      const err = () => { el.removeEventListener(evt,   ok);  el.removeEventListener('error', err); reject(new Error('media error')); };
+      el.addEventListener(evt,   ok);
+      el.addEventListener('error', err);
+    });
+  }
+
+  extraFrames.addEventListener('input', () => {
+    bitrateDisplay.textContent = (parseInt(extraFrames.value) + 1) * originalBitrate;
+    extraFramesVal.textContent = extraFrames.value;
+  });
+
+  videoUpload.addEventListener('change', async () => {
+    const file = videoUpload.files[0];
+    if (!file) return;
+    if (videoURL) URL.revokeObjectURL(videoURL);
+    videoURL = URL.createObjectURL(file);
+
+    videoPlayer.src = videoURL;
+    hiddenVideo.src = videoURL;
+
+    setStatus('Loading metadata…');
+    setProgress(0);
+
+    try {
+      await once(videoPlayer, 'loadedmetadata');
+      await once(hiddenVideo, 'loadedmetadata');
+    } catch {
+      setStatus('Failed to load video metadata');
+      return;
+    }
+
+    workCanvas.width  = videoPlayer.videoWidth;
+    workCanvas.height = videoPlayer.videoHeight;
+
+    detectedFps = await estimateVideoFramerate(hiddenVideo);
+    sourceFpsDisplay.textContent = detectedFps.toFixed(1);
+    const estimatedBitrate = estimateBitrateMbps(file, hiddenVideo.duration);
+    originalBitrate = estimatedBitrate;
+    bitrateDisplay.textContent = originalBitrate * (parseInt(extraFrames.value) + 1);
+
+    setStatus(`Loaded: ${file.name}  |  ${hiddenVideo.videoWidth}×${hiddenVideo.videoHeight}  |  ${hiddenVideo.duration.toFixed(2)}s | Input bitrate: ${originalBitrate} Mbps`);
+    renderBtn.disabled = false;
+  });
+
+  cancelBtn.addEventListener('click', () => {
+    cancelled = true;
+    cancelBtn.disabled = true;
+    setStatus('Cancelling render');
+  });
+
+  renderBtn.addEventListener('click', startRender);
+
+  async function startRender() {
+    if (!videoURL) { setStatus('Please load a video first'); return; }
+
+    cancelled = false;
+    renderBtn.disabled = true;
+    cancelBtn.disabled = false;
+    setProgress(0);
+
+    const extra         = parseInt(extraFrames.value, 10);
+    const srcFps         = detectedFps || 30;
+    const outFps         = srcFps * (extra + 1);
+
+    const preserveBitrate = Math.round(originalBitrate * outFps / srcFps);
+    bitrateDisplay.textContent = preserveBitrate;
+
+    setStatus(`Starting render…\nUsing bitrate: ${preserveBitrate} Mbps`);
+
+    const W = hiddenVideo.videoWidth;
+    const H = hiddenVideo.videoHeight;
+    const duration  = hiddenVideo.duration;
+    const totalSrc  = Math.round(duration * srcFps);
+
+    const capCanvas = document.createElement('canvas');
+    capCanvas.width = W; capCanvas.height = H;
+    const capCtx    = capCanvas.getContext('2d');
+
+    const frames = [];
+
+    for (let i = 0; i <= totalSrc; i++) {
+      if (cancelled) { finishCancelled(); return; }
+
+      const t = Math.min(duration, i / srcFps);
+      hiddenVideo.currentTime = t;
+      try { await once(hiddenVideo, 'seeked'); } catch { break; }
+
+      capCtx.drawImage(hiddenVideo, 0, 0, W, H);
+      frames.push(await createImageBitmap(capCanvas));
+
+      setProgress((i / totalSrc) * 0.5);         
+      setStatus(`Collecting frames: ${i}/${totalSrc}  (${srcFps} fps source)`);
+    }
+
+    if (frames.length < 2) { setStatus('Not enough frames collected'); resetUI(); return; }
+
+    if (!supportsWebCodecs) {
+      setStatus('WebCodecs is not available in this browser');
+      resetUI();
+      return;
+    }
+
+    workCanvas.hidden = false;
+
+    const muxer = new WebMMuxer.Muxer({
+      target: new WebMMuxer.ArrayBufferTarget(),
+      video: {
+        codec: 'V_VP9',
+        width: W,
+        height: H,
+        frameRate: outFps
+      }
+    });
+
+    const encoder = new VideoEncoder({
+      output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+      error: (e) => console.error('VideoEncoder error ', e)
+    });
+
+    encoder.configure({
+      codec: 'vp09.00.10.08',
+      width: W,
+      height: H,
+      bitrate: preserveBitrate * 1_000_000,
+      framerate: outFps
+    });
+
+    const frameInterval = 1000 / outFps;
+    const segCount      = frames.length - 1;
+    const totalOutFrames= segCount * (extra + 1);
+    let drawnFrames     = 0;
+
+    for (let seg = 0; seg < segCount; seg++) {
+      if (cancelled) break;
+
+      const start = frames[seg];
+      const end   = frames[seg + 1];
+
+      for (let step = 0; step <= extra; step++) {
+        if (cancelled) break;
+
+        const t = step / (extra + 1);
+        const blendStrength = t * 0.6;
+
+
+        ctx.clearRect(0, 0, W, H);
+        ctx.globalAlpha = 1;
+        ctx.drawImage(start, 0, 0);
+
+        ctx.globalAlpha = blendStrength;
+        ctx.drawImage(end, 0, 0);
+
+        ctx.globalAlpha = 1;
+
+        const timestamp = drawnFrames * 1000000 / outFps;
+        const frame = new VideoFrame(workCanvas, { timestamp });
+        encoder.encode(frame, { keyFrame: drawnFrames === 0 });
+        frame.close();
+
+        drawnFrames++;
+        const overallProgress = 0.5 + (drawnFrames / totalOutFrames) * 0.5;
+        setProgress(overallProgress);
+        setStatus(
+          `Rendering frame ${drawnFrames}/${totalOutFrames}\n` +
+          `Segment ${seg + 1}/${segCount}, interp step ${step}/${extra}\n` +
+          `Output: ${outFps} fps`
+        );
+
+        await new Promise(r => setTimeout(r, frameInterval));
+      }
+    }
+
+    await encoder.flush();
+    encoder.close();
+    muxer.finalize();
+
+    if (cancelled) { finishCancelled(); return; }
+
+    const blob = new Blob([muxer.target.buffer], { type: 'video/webm' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = `interpolated_${srcFps}to${outFps}fps_${Date.now()}.webm`;
+    a.click();
+    setStatus(`Done!\n${srcFps}fps  →  ${outFps}fps`);
+
+    setProgress(1);
+    resetUI();
+  }
+
+
+  function finishCancelled() {
+    setStatus('Render cancelled.');
+    setProgress(0);
+    resetUI();
+  }
+
+  function resetUI() {
+    renderBtn.disabled = false;
+    cancelBtn.disabled = true;
+    workCanvas.hidden  = true;
+  }
+
+  function estimateVideoFramerate(video) {
+    return new Promise(resolve => {
+      const fallback = () => {
+        let lastTime = video.currentTime;
+        let frames = 0;
+        const start = performance.now();
+        function loop() {
+          if (cancelled) return resolve(30);
+          const now = performance.now();
+          if (video.currentTime !== lastTime) {
+            frames++;
+            lastTime = video.currentTime;
+          }
+          if (now - start < 1000) {
+            requestAnimationFrame(loop);
+          } else {
+            resolve(Math.max(24, Math.min(120, Math.round(frames))));
+          }
+        }
+        video.currentTime = 0;
+        video.muted = true;
+        video.play().then(() => requestAnimationFrame(loop)).catch(() => resolve(30));
+      };
+
+      if (typeof video.requestVideoFrameCallback === 'function') {
+        let lastMediaTime = null;
+        let samples = [];
+        let count = 0;
+
+        const onFrame = (_, meta) => {
+          if (lastMediaTime !== null) {
+            samples.push(meta.mediaTime - lastMediaTime);
+          }
+          lastMediaTime = meta.mediaTime;
+          count += 1;
+          if (count < 12) {
+            video.requestVideoFrameCallback(onFrame);
+          } else {
+            const avg = samples.length ? samples.reduce((a, b) => a + b, 0) / samples.length : 1 / 30;
+            resolve(Math.max(24, Math.min(120, Math.round(1 / avg))));
+          }
+        };
+
+        video.currentTime = 0;
+        video.muted = true;
+        video.play().then(() => video.requestVideoFrameCallback(onFrame)).catch(fallback);
+      } else {
+        fallback();
+      }
+    });
+  }
+
+  function estimateBitrateMbps(file, duration) {
+    if (!duration || duration <= 0) return 50;
+    return Math.max(1, Math.round((file.size * 8) / duration / 1_000_000));
+  }
+
+  function computeMotionShift(startBitmap, endBitmap, width, height) {
+    const tmp = document.createElement('canvas');
+    tmp.width = width; tmp.height = height;
+    const tc  = tmp.getContext('2d');
+
+    tc.drawImage(startBitmap, 0, 0, width, height);
+    const startData = tc.getImageData(0, 0, width, height).data;
+
+    tc.drawImage(endBitmap, 0, 0, width, height);
+    const endData   = tc.getImageData(0, 0, width, height).data;
+
+    let sx = 0, sy = 0, sw = 0;
+    for (let i = 0; i < startData.length; i += 4) {
+      const lA   = 0.299 * startData[i] + 0.587 * startData[i+1] + 0.114 * startData[i+2];
+      const lB   = 0.299 * endData[i]   + 0.587 * endData[i+1]   + 0.114 * endData[i+2];
+      const diff = lB - lA;
+      if (Math.abs(diff) < 16) continue;
+      const px = (i / 4) % width;
+      const py = Math.floor((i / 4) / width);
+      sx += px * diff;
+      sy += py * diff;
+      sw += Math.abs(diff);
+    }
+    if (sw === 0) return { x: 0, y: 0 };
+    return { x: (sx / sw / width) * 10, y: (sy / sw / height) * 10 };
+  }
+</script>
+</body>
+</html>
