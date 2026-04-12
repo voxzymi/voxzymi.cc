@@ -437,7 +437,7 @@
         gl.vertexAttribPointer(attrib, 2, gl.FLOAT, false, 0, 0);
     };
     makeBuffer([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1], gl.getAttribLocation(prog, "a_p"));
-    makeBuffer([0,0, 1,0, 0,1, 0,1, 1,0, 1,1], gl.getAttribLocation(prog, "a_t"));
+    makeBuffer([0,1, 1,1, 0,0, 0,0, 1,1, 1,0], gl.getAttribLocation(prog, "a_t"));
 
     const uLoc = {
         size: gl.getUniformLocation(prog, "u_s"),
