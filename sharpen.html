@@ -290,7 +290,6 @@
         log.textContent = `Status: ${useFullQuality ? 'Full quality' : 'Fast'} mode selected.`;
     };
 
-    // ---- WebGL setup ----
     let isRecording = false;
     let fb1, fb2, tex1, tex2;
     let rafId = null;
@@ -385,7 +384,6 @@
             vec2 p = 1.0 / u_s;
             vec4 c = texture2D(u_i, v_t);
 
-            // Fast 3x3 denoise
             if (u_d > 0.01) {
                 vec4 sum = c;
                 float wsum = 1.0;
@@ -401,7 +399,6 @@
                 c = sum / wsum;
             }
 
-            // Laplacian neighbors
             vec4 n = texture2D(u_i, v_t + vec2(0.0, -p.y)) +
                      texture2D(u_i, v_t + vec2(0.0,  p.y)) +
                      texture2D(u_i, v_t + vec2(-p.x, 0.0)) +
@@ -621,29 +618,25 @@
 }
 
     function finalizeWebM(chunks) {
-    // 1. EBML Header (WebM)
     const header = new Uint8Array([
         0x1A, 0x45, 0xDF, 0xA3, 0x9F, 0x42, 0x86, 0x81, 0x01, 0x42, 0xF7, 0x81, 0x01, 
         0x42, 0xF2, 0x81, 0x04, 0x42, 0xF3, 0x81, 0x08, 0x42, 0x82, 0x84, 0x77, 0x65, 0x62, 0x6D
     ]);
 
-    // 2. Segment & Track Info (Simplest possible Track 1)
     const trackInfo = new Uint8Array([
-        0x18, 0x54, 0x88, 0x01, // Segment ID
-        0x16, 0x54, 0xAE, 0x6B, // Tracks ID
-        0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1A, // Size (filler)
+        0x18, 0x54, 0x88, 0x01, 
+        0x16, 0x54, 0xAE, 0x6B, 
+        0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1A, 
         0xAE, 0x92, 0xD7, 0x81, 0x01, 0x73, 0xC5, 0x81, 0x01, 0x83, 0x81, 0x01, 0x86, 0x85, 0x56, 0x5F, 0x56, 0x50, 0x38
     ]);
 
     const finalData = [header, trackInfo];
 
-    // 3. Wrap each frame in a Cluster (0x1F43B675) and SimpleBlock (0xA3)
     chunks.forEach((chunk) => {
-        const timestamp = Math.round(chunk.timestamp / 1000); // ms
+        const timestamp = Math.round(chunk.timestamp / 1000);
         const clusterId = new Uint8Array([0x1F, 0x43, 0xB6, 0x75]);
         const blockId = new Uint8Array([0xA3]);
         
-        // SimpleBlock Header: Track(1), Timecode(16-bit), Flags(Keyframe)
         const flags = chunk.isKey ? 0x80 : 0x00;
         const blockHeader = new Uint8Array([
             0x81, 
@@ -654,7 +647,7 @@
 
         const cluster = concatUint8(
             clusterId, 
-            makeVint(chunk.data.length + 5), // +5 for block header
+            makeVint(chunk.data.length + 5), 
             blockId, 
             makeVint(chunk.data.length + 4), 
             blockHeader, 
@@ -737,7 +730,7 @@
         const isKey = chunk.type === 'key';
         
         const blockHeader = new Uint8Array([
-            0xA3, // SimpleBlock ID
+            0xA3, 
             ...makeVint(data.length + 4), 
             0x81, 
             0x00, 0x00, 
@@ -783,7 +776,6 @@
         bitrate: parseInt(bitrateInput.value) * 1_000_000
     });
 
-    // 3. Process every frame
     const totalFrames = Math.ceil(video.duration * fps);
     for (let i = 0; i < totalFrames; i++) {
         video.currentTime = i / fps;
@@ -795,7 +787,6 @@
         encoder.encode(frame, { keyFrame: i % 60 === 0 });
         frame.close();
 
-        // Update progress bar
         progressFill.style.width = `${(i / totalFrames * 100)}%`;
     }
 
@@ -803,7 +794,6 @@
     encoder.close();
     muxer.finalize();
 
-    // 5. Download the perfectly formatted video
     const blob = new Blob([muxer.target.buffer], { type: 'video/webm' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
