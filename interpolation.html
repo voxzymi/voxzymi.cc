@@ -28,7 +28,7 @@
     button.danger:hover:not(:disabled) { background: #ff6666; }
     video, canvas { width: 100%; max-height: 520px; border-radius: 10px; background: #000; border: 1px solid #30363d; display: block; }
     .status { font-family: monospace; padding: 14px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid #30363d; color: #ffffff; white-space: pre-wrap; }
-    .slider-label { display: flex; justify-content: space-between; font-size: 12px; color: #ffffff; margin-bottom: 4px; }
+    .slider-label { display: flex; justify-content: space-between; font-size: 12px; color: #8b949e; margin-bottom: 4px; }
     .progress-bar-wrap { height: 6px; background: #21262d; border-radius: 3px; margin: 10px 0; overflow: hidden; }
     .progress-bar { height: 100%; width: 0%; background: #ffffff; border-radius: 3px; transition: width 0.1s; }
     .background-canvas {
@@ -58,7 +58,7 @@
 <div class="container">
   <div class="panel">
     <h1>Interpolation Tool</h1>
-    <p>Add more FPS to your videos using Frame Blending</p>
+    <p>Add more FPS to your videos using Optical Flow</p>
 
     <div class="input-group">
       <label for="videoUpload">Video File</label>
@@ -381,26 +381,25 @@
     const totalOutFrames= segCount * (extra + 1);
     let drawnFrames     = 0;
 
+    const flowOptions = {
+      blockSize: Math.max(16, Math.min(32, Math.floor(Math.max(W, H) / 64))),
+      searchRadius: 8
+    };
+
     for (let seg = 0; seg < segCount; seg++) {
       if (cancelled) break;
 
       const start = frames[seg];
       const end   = frames[seg + 1];
 
+      setStatus(`Computing optical flow for segment ${seg + 1}/${segCount}`);
+      const flowData = computeOpticalFlow(start, end, W, H, flowOptions.blockSize, flowOptions.searchRadius);
+
       for (let step = 0; step <= extra; step++) {
         if (cancelled) break;
 
         const t = step / (extra + 1);
-        const blendStrength = t * 0.6;
-
-        ctx.clearRect(0, 0, W, H);
-        ctx.globalAlpha = 1;
-        ctx.drawImage(start, 0, 0);
-
-        ctx.globalAlpha = blendStrength;
-        ctx.drawImage(end, 0, 0);
-
-        ctx.globalAlpha = 1;
+        renderInterpolatedFrame(start, end, flowData, t, W, H, ctx);
 
         const timestamp = drawnFrames * 1000000 / outFps;
         const frame = new VideoFrame(workCanvas, { timestamp });
@@ -511,31 +510,158 @@
     return Math.max(1, Math.round((file.size * 8) / duration / 1_000_000));
   }
 
-  function computeMotionShift(startBitmap, endBitmap, width, height) {
+  function getImageDataFromBitmap(bitmap, width, height) {
     const tmp = document.createElement('canvas');
-    tmp.width = width; tmp.height = height;
-    const tc  = tmp.getContext('2d');
+    tmp.width = width;
+    tmp.height = height;
+    const tmpCtx = tmp.getContext('2d');
+    tmpCtx.drawImage(bitmap, 0, 0, width, height);
+    return tmpCtx.getImageData(0, 0, width, height);
+  }
 
-    tc.drawImage(startBitmap, 0, 0, width, height);
-    const startData = tc.getImageData(0, 0, width, height).data;
-
-    tc.drawImage(endBitmap, 0, 0, width, height);
-    const endData   = tc.getImageData(0, 0, width, height).data;
-
-    let sx = 0, sy = 0, sw = 0;
-    for (let i = 0; i < startData.length; i += 4) {
-      const lA   = 0.299 * startData[i] + 0.587 * startData[i+1] + 0.114 * startData[i+2];
-      const lB   = 0.299 * endData[i]   + 0.587 * endData[i+1]   + 0.114 * endData[i+2];
-      const diff = lB - lA;
-      if (Math.abs(diff) < 16) continue;
-      const px = (i / 4) % width;
-      const py = Math.floor((i / 4) / width);
-      sx += px * diff;
-      sy += py * diff;
-      sw += Math.abs(diff);
+  function createGrayscale(imageData) {
+    const { data, width, height } = imageData;
+    const gray = new Float32Array(width * height);
+    for (let i = 0, j = 0; i < data.length; i += 4, j++) {
+      gray[j] = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
     }
-    if (sw === 0) return { x: 0, y: 0 };
-    return { x: (sx / sw / width) * 10, y: (sy / sw / height) * 10 };
+    return gray;
+  }
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function sampleRGBA(pixels, width, height, x, y) {
+    x = clamp(x, 0, width - 1);
+    y = clamp(y, 0, height - 1);
+
+    const x0 = Math.floor(x);
+    const y0 = Math.floor(y);
+    const x1 = Math.min(x0 + 1, width - 1);
+    const y1 = Math.min(y0 + 1, height - 1);
+
+    const hx = x - x0;
+    const hy = y - y0;
+    const w00 = (1 - hx) * (1 - hy);
+    const w01 = hx * (1 - hy);
+    const w10 = (1 - hx) * hy;
+    const w11 = hx * hy;
+
+    const i00 = (y0 * width + x0) * 4;
+    const i01 = (y0 * width + x1) * 4;
+    const i10 = (y1 * width + x0) * 4;
+    const i11 = (y1 * width + x1) * 4;
+
+    return [
+      pixels[i00] * w00 + pixels[i01] * w01 + pixels[i10] * w10 + pixels[i11] * w11,
+      pixels[i00 + 1] * w00 + pixels[i01 + 1] * w01 + pixels[i10 + 1] * w10 + pixels[i11 + 1] * w11,
+      pixels[i00 + 2] * w00 + pixels[i01 + 2] * w01 + pixels[i10 + 2] * w10 + pixels[i11 + 2] * w11,
+      pixels[i00 + 3] * w00 + pixels[i01 + 3] * w01 + pixels[i10 + 3] * w10 + pixels[i11 + 3] * w11
+    ];
+  }
+
+  function computeOpticalFlow(startBitmap, endBitmap, width, height, blockSize, searchRadius) {
+    const startImage = getImageDataFromBitmap(startBitmap, width, height);
+    const endImage = getImageDataFromBitmap(endBitmap, width, height);
+    const startGray = createGrayscale(startImage);
+    const endGray = createGrayscale(endImage);
+
+    const blocksX = Math.ceil(width / blockSize);
+    const blocksY = Math.ceil(height / blockSize);
+    const flow = new Float32Array(blocksX * blocksY * 2);
+
+    for (let by = 0; by < blocksY; by++) {
+      for (let bx = 0; bx < blocksX; bx++) {
+        const x0 = bx * blockSize;
+        const y0 = by * blockSize;
+        const bw = Math.min(blockSize, width - x0);
+        const bh = Math.min(blockSize, height - y0);
+
+        let bestError = Infinity;
+        let bestDx = 0;
+        let bestDy = 0;
+
+        for (let dy = -searchRadius; dy <= searchRadius; dy++) {
+          for (let dx = -searchRadius; dx <= searchRadius; dx++) {
+            let error = 0;
+
+            for (let y = 0; y < bh && error < bestError; y++) {
+              const row = (y0 + y) * width;
+              for (let x = 0; x < bw; x++) {
+                const sx = x0 + x;
+                const sy = y0 + y;
+                const tx = clamp(sx + dx, 0, width - 1);
+                const ty = clamp(sy + dy, 0, height - 1);
+                const diff = startGray[row + sx] - endGray[ty * width + tx];
+                error += diff * diff;
+              }
+            }
+
+            if (error < bestError) {
+              bestError = error;
+              bestDx = dx;
+              bestDy = dy;
+            }
+          }
+        }
+
+        const index = (by * blocksX + bx) * 2;
+        flow[index] = bestDx;
+        flow[index + 1] = bestDy;
+      }
+    }
+
+    return { startImage, endImage, blocksX, blocksY, blockSize, flow };
+  }
+
+  function renderInterpolatedFrame(startBitmap, endBitmap, flowData, t, width, height, ctx) {
+    if (t === 0) {
+      ctx.drawImage(startBitmap, 0, 0);
+      return;
+    }
+
+    const output = ctx.createImageData(width, height);
+    const outData = output.data;
+    const { startImage, endImage, blocksX, blocksY, blockSize, flow } = flowData;
+    const startPixels = startImage.data;
+    const endPixels = endImage.data;
+
+    for (let by = 0; by < blocksY; by++) {
+      for (let bx = 0; bx < blocksX; bx++) {
+        const x0 = bx * blockSize;
+        const y0 = by * blockSize;
+        const dx = flow[(by * blocksX + bx) * 2];
+        const dy = flow[(by * blocksX + bx) * 2 + 1];
+
+        for (let y = 0; y < blockSize; y++) {
+          const py = y0 + y;
+          if (py >= height) break;
+
+          for (let x = 0; x < blockSize; x++) {
+            const px = x0 + x;
+            if (px >= width) break;
+
+            const sx = px - dx * t;
+            const sy = py - dy * t;
+            const ex = px + dx * (1 - t);
+            const ey = py + dy * (1 - t);
+
+            const startColor = sampleRGBA(startPixels, width, height, sx, sy);
+            const endColor = sampleRGBA(endPixels, width, height, ex, ey);
+            const idx = (py * width + px) * 4;
+            const invT = 1 - t;
+
+            outData[idx]     = startColor[0] * invT + endColor[0] * t;
+            outData[idx + 1] = startColor[1] * invT + endColor[1] * t;
+            outData[idx + 2] = startColor[2] * invT + endColor[2] * t;
+            outData[idx + 3] = startColor[3] * invT + endColor[3] * t;
+          }
+        }
+      }
+    }
+
+    ctx.putImageData(output, 0, 0);
   }
 </script>
 <script src="background.js"></script>
