@@ -288,6 +288,7 @@
   async function startRender() {
     if (!videoURL) { setStatus('Please load a video first'); return; }
 
+    window.setBackgroundEnabled?.(false);
     cancelled = false;
     renderBtn.disabled = true;
     cancelBtn.disabled = false;
@@ -452,6 +453,7 @@
     renderBtn.disabled = false;
     cancelBtn.disabled = true;
     workCanvas.hidden  = true;
+    window.setBackgroundEnabled?.(true);
   }
 
   function estimateVideoFramerate(video) {

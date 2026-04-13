@@ -67,6 +67,9 @@ class ClassicalNoise {
   const canvas = document.getElementById('backgroundCanvas');
   if (!canvas) return;
 
+  let backgroundEnabled = true;
+  window.setBackgroundEnabled = (enabled) => { backgroundEnabled = enabled; };
+
   const ctx = canvas.getContext('2d');
   const perlin = new ClassicalNoise();
   const variation = 0.0025;
@@ -113,7 +116,11 @@ class ClassicalNoise {
   }
 
   function animate() {
-    draw();
+    if (backgroundEnabled) {
+      draw();
+    } else {
+      ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    }
     requestAnimationFrame(animate);
   }
 
