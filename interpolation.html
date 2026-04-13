@@ -241,7 +241,7 @@
   extraFrames.addEventListener('input', () => {
     bitrateDisplay.textContent = (parseInt(extraFrames.value) + 1) * originalBitrate;
     extraFramesVal.textContent = extraFrames.value;
-    sourceFpsDisplay.textContent = detectedFps * (parseInt(extraFrames.value) + 1);
+    sourceFpsDisplay.textContent = (parseInt(extraFrames.value) + 1) * detectedFps;
   });
 
   videoUpload.addEventListener('change', async () => {
