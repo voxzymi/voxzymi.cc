@@ -2,74 +2,136 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>voxzymi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authenticating... | Voxzymi</title>
     <style>
-        body { background: #0f0f0f; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .loader { text-align: center; }
+        body {
+            background-color: #0f0f0f;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .loader {
+            text-align: center;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #5865F2; /* Discord Blue */
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
+
     <div class="loader">
-        <p id="status">Generating Hardware ID...</p>
+        <div class="spinner"></div>
+        <p id="status">Verifying device hardware...</p>
     </div>
 
     <script>
-        async function getStableFingerprint() {
-            // 1. Check if we already have one saved for this device
-            let savedFp = localStorage.getItem('vox_fp');
-            if (savedFp) return savedFp;
-
-            // 2. Otherwise, generate a new hardware-based hash
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-            ctx.textBaseline = "top";
-            ctx.font = "16px 'Arial'";
-            ctx.fillText("voxzymi_hardware_v1", 2, 2);
-            
-            // Collect hardware signals
-            const signals = [
-                canvas.toDataURL(), // GPU Rendering
-                navigator.userAgent, // Browser version
-                screen.width + 'x' + screen.height, // Resolution
-                navigator.hardwareConcurrency // CPU Cores
-            ];
-            
-            const str = signals.join('###');
-            let hash = 0;
-            for (let i = 0; i < str.length; i++) {
-                hash = ((hash << 5) - hash) + str.charCodeAt(i);
-                hash |= 0;
-            }
-            const finalFp = Math.abs(hash).toString(16);
-            
-            // 3. Save it forever on this device
-            localStorage.setItem('vox_fp', finalFp);
-            return finalFp;
+        // 1. Generate Hardware Fingerprint
+        async function getFingerprint() {
+    try {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        ctx.textBaseline = "top";
+        ctx.font = "14px 'Arial'";
+        ctx.fillText("voxzymi_auth_v1", 2, 2);
+        const data = canvas.toDataURL();
+        
+        let hash = 0;
+        for (let i = 0; i < data.length; i++) {
+            hash = ((hash << 5) - hash) + data.charCodeAt(i);
+            hash |= 0;
         }
+        return Math.abs(hash).toString(16);
+    } catch (e) {
+        return "fp-fallback-" + Math.floor(Math.random() * 1000000);
+    }
+}
+
+/**
+ * Main function to initialize or retrieve the device identity
+ */
+async function initDeviceSession() {
+    // 1. Check if we already have a saved ID
+    let deviceId = localStorage.getItem('vx_device_id');
+
+    if (!deviceId) {
+        console.log("No ID found. Generating fingerprint...");
+        
+        // 2. Generate the fingerprint
+        const fingerprint = await getFingerprint();
+        
+        // 3. Add extra entropy (Timezone + Cores) to reduce collisions
+        const entropy = [
+            navigator.hardwareConcurrency, // CPU Cores
+            new Date().getTimezoneOffset(), // Timezone
+            screen.width + "x" + screen.height // Resolution
+        ].join('|');
+
+        // Final ID is a mix of fingerprint + basic hardware info
+        deviceId = `${fingerprint}-${btoa(entropy).substring(0, 8)}`;
+        
+        // 4. Save it so it's persistent
+        localStorage.setItem('vx_device_id', deviceId);
+    }
+
+    console.log("Current Device ID:", deviceId);
+    return deviceId;
+}
+
+// Usage
+initDeviceSession().then(id => {
+    // You can now send this ID to your server or use it for auth
+    document.body.innerHTML += `<h3>Device ID: ${id}</h3>`;
+});
 
         async function startLogin() {
-            const statusText = document.getElementById('status');
-            const urlParams = new URLSearchParams(window.location.search);
-            
-            // Handle return from Worker
-            const finishId = urlParams.get('finish_login');
-            if (finishId) {
-                document.cookie = `id=${finishId}; Path=/; Max-Age=86400; SameSite=Strict; Secure`;
-                window.location.href = "/";
-                return;
-            }
+    const statusText = document.getElementById('status');
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // SCENARIO 2: Returning from Worker to set the cookie
+    const finishId = urlParams.get('finish_login');
+    if (finishId) {
+        statusText.innerText = "Finalizing session...";
+        // Set the cookie directly on voxzymi.cc
+        document.cookie = `id=${finishId}; Path=/; Max-Age=86400; SameSite=Strict; Secure`;
+        
+        // Wait a tiny bit and go to homepage
+        setTimeout(() => {
+            window.location.href = "https://voxzymi.cc/";
+        }, 500);
+        return;
+    }
 
-            const token = urlParams.get('token');
-            if (!token) {
-                statusText.innerText = "❌ No token found.";
-                return;
-            }
+    // SCENARIO 1: First arrival from Discord
+    const token = urlParams.get('token');
+    if (!token) {
+        statusText.innerText = "❌ Error: No login token found.";
+        return;
+    }
 
-            const fp = await getStableFingerprint();
-            const workerURL = "https://voxzymi-auth.andrewrobloxvapeconfigs.workers.dev/verify";
-            
-            window.location.href = `${workerURL}?token=${token}&fp=${fp}`;
-        }
+    const fp = await getFingerprint();
+    const workerURL = "https://voxzymi-auth.andrewrobloxvapeconfigs.workers.dev/verify";
+    
+    // Send to worker, which will then redirect back here with ?finish_login=...
+    window.location.href = `${workerURL}?token=${token}&fp=${fp}`;
+}
+
+        // Run on page load
         window.onload = startLogin;
     </script>
 </body>
