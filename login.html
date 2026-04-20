@@ -64,28 +64,36 @@
         }
 
         async function startLogin() {
-            const statusText = document.getElementById('status');
-            const urlParams = new URLSearchParams(window.location.search);
-            const token = urlParams.get('token');
+    const statusText = document.getElementById('status');
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // SCENARIO 2: Returning from Worker to set the cookie
+    const finishId = urlParams.get('finish_login');
+    if (finishId) {
+        statusText.innerText = "Finalizing session...";
+        // Set the cookie directly on voxzymi.cc
+        document.cookie = `id=${finishId}; Path=/; Max-Age=86400; SameSite=Strict; Secure`;
+        
+        // Wait a tiny bit and go to homepage
+        setTimeout(() => {
+            window.location.href = "https://voxzymi.cc/";
+        }, 500);
+        return;
+    }
 
-            // Check if token exists in URL
-            if (!token) {
-                statusText.innerText = "❌ Error: No login token found. Please go back to Discord.";
-                statusText.style.color = "#ff4d4d";
-                return;
-            }
+    // SCENARIO 1: First arrival from Discord
+    const token = urlParams.get('token');
+    if (!token) {
+        statusText.innerText = "❌ Error: No login token found.";
+        return;
+    }
 
-            // Generate the PC fingerprint
-            const fp = await getFingerprint();
-            
-            // Your Cloudflare Worker URL
-            const workerURL = "https://voxzymi-auth.andrewrobloxvapeconfigs.workers.dev/verify";
-
-            statusText.innerText = "Redirecting to secure session...";
-
-            // 2. Redirect to Worker with BOTH the token and the fingerprint
-            window.location.href = `${workerURL}?token=${token}&fp=${fp}`;
-        }
+    const fp = await getFingerprint();
+    const workerURL = "https://voxzymi-auth.andrewrobloxvapeconfigs.workers.dev/verify";
+    
+    // Send to worker, which will then redirect back here with ?finish_login=...
+    window.location.href = `${workerURL}?token=${token}&fp=${fp}`;
+}
 
         // Run on page load
         window.onload = startLogin;
