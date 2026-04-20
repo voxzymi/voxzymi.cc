@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authenticating... | Voxzymi</title>
+    <style>
+        body {
+            background-color: #0f0f0f;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .loader {
+            text-align: center;
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: #5865F2; /* Discord Blue */
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="loader">
+        <div class="spinner"></div>
+        <p id="status">Verifying device hardware...</p>
+    </div>
+
+    <script>
+        // 1. Generate Hardware Fingerprint
+        async function getFingerprint() {
+            try {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                ctx.textBaseline = "top";
+                ctx.font = "14px 'Arial'";
+                ctx.fillText("voxzymi_auth_v1", 2, 2);
+                const data = canvas.toDataURL();
+                
+                let hash = 0;
+                for (let i = 0; i < data.length; i++) {
+                    hash = ((hash << 5) - hash) + data.charCodeAt(i);
+                    hash |= 0;
+                }
+                return Math.abs(hash).toString(16);
+            } catch (e) {
+                // Fallback for browsers that block canvas (like Brave)
+                return "fp-fallback-" + Math.floor(Math.random() * 1000000);
+            }
+        }
+
+        async function startLogin() {
+            const statusText = document.getElementById('status');
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+
+            // Check if token exists in URL
+            if (!token) {
+                statusText.innerText = "❌ Error: No login token found. Please go back to Discord.";
+                statusText.style.color = "#ff4d4d";
+                return;
+            }
+
+            // Generate the PC fingerprint
+            const fp = await getFingerprint();
+            
+            // Your Cloudflare Worker URL
+            const workerURL = "https://voxzymi-auth.andrewrobloxvapeconfigs.workers.dev/verify";
+
+            statusText.innerText = "Redirecting to secure session...";
+
+            // 2. Redirect to Worker with BOTH the token and the fingerprint
+            window.location.href = `${workerURL}?token=${token}&fp=${fp}`;
+        }
+
+        // Run on page load
+        window.onload = startLogin;
+    </script>
+</body>
+</html>
