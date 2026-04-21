@@ -1,10 +1,11 @@
 (async function() {
-    const root = document.getElementById('root');
-
+    // 1. Generate the fingerprint (Keep in mind this may return "fp-blocked" for strict browsers)
     async function getFingerprint() {
         try {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
+            ctx.textBaseline = "top";
+            ctx.font = "14px 'Arial'";
             ctx.fillText("voxzymi_v1", 2, 2);
             const data = canvas.toDataURL();
             let hash = 0;
@@ -16,38 +17,61 @@
         } catch (e) { return "fp-blocked"; }
     }
 
-    async function checkAndLoad() {
+    // 2. Fetch the actual content from the Worker, not just a true/false check
+    async function initApp() {
         const fp = await getFingerprint();
         const match = document.cookie.match(/id=([^;]+)/);
         const uid = match ? match[1] : null;
 
-        if (!uid) return showBlockedPage("no_session");
+        if (!uid) {
+            showBlockedPage("no_session");
+            return;
+        }
 
-        const workerURL = "https://voxzymi-auth.andrewrobloxvapeconfigs.workers.dev/api/check-session";
+        // Point this to an endpoint that returns the HTML/Data, not just { active: true }
+        const workerURL = "https://voxzymi-auth.andrewrobloxvapeconfigs.workers.dev/api/get-secure-content";
 
         try {
             const response = await fetch(`${workerURL}?uid=${uid}&fp=${fp}`);
-            const data = await response.json();
 
-            if (data.active) {
-                // FIX: Instead of unhiding, we FETCH the tool content now
-                // Or if the tool is small, the worker can send the HTML in 'data.html'
-                root.innerHTML = data.toolHTML; 
+            if (response.ok) {
+                // SUCCESS: The Worker verified the user and sent the protected HTML
+                const secureContent = await response.text(); 
+                
+                // Inject the secure tools into the page
+                document.body.innerHTML = secureContent; 
             } else {
-                showBlockedPage(data.error);
+                // FAILED: The Worker denied access (e.g., 401 or 403 status code)
+                const data = await response.json();
+                showBlockedPage(data.error || "access_denied");
             }
         } catch (err) {
             showBlockedPage("connection_error");
         }
     }
 
+    // 3. The Block Page UI
     function showBlockedPage(errorType) {
-        root.innerHTML = `
-            <div style="color:white; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:sans-serif;">
-                <h1 style="color:#ff4d4d;">Access Denied</h1>
-                <p>${errorType === 'device_mismatch' ? 'Log out of your other device first.' : 'Please log in via Discord.'}</p>
+        let title = "Access Denied";
+        let message = "Please log in via Discord to access these tools.";
+        
+        if (errorType === "device_mismatch") {
+            title = "Session Conflict";
+            message = "You are currently logged in on another device. Please log out there or reset your session in Discord.";
+        } else if (errorType === "connection_error") {
+            title = "Connection Error";
+            message = "Could not connect to the authentication server.";
+        }
+
+        document.documentElement.innerHTML = `
+            <div style="background:#0a0a0a; color:white; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:sans-serif; text-align:center; padding:20px;">
+                <div style="font-size:50px; margin-bottom:20px;">🔒</div>
+                <h1 style="color:#ff4d4d; margin:0;">${title}</h1>
+                <p style="color:#ccc; max-width:400px; line-height:1.5;">${message}</p>
+                <a href="https://discord.com" style="margin-top:20px; padding:12px 25px; background:#5865F2; color:white; text-decoration:none; border-radius:5px; font-weight:bold;">Return to Discord</a>
             </div>`;
     }
 
-    checkAndLoad();
+    // Start the process
+    initApp();
 })();

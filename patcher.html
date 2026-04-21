@@ -1,12 +1,10 @@
 <!DOCTYPE html>
-<html lang="en"><head>
-//<script src="auth-guard.js"></script>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>voxzymi</title>
-</head>
-<body>
+    <link rel="stylesheet" href="animations.css">
     <style>
         body { font-family: Inter, system-ui, sans-serif; line-height: 1.5; max-width: 900px; margin: 40px auto; padding: 20px; background: #010409; color: #ffffff; }
         .home-nav { display: flex; justify-content: flex-start; margin-bottom: 20px; }
@@ -69,6 +67,14 @@
         logEl.style.display = 'block';
         logEl.textContent += msg + '\n';
     }
+
+    // Animate log when it appears
+    const observer = new MutationObserver(() => {
+        if (logEl.style.display === 'block' && !logEl.classList.contains(' ')) {
+            logEl.classList.add(' ');
+        }
+    });
+    observer.observe(logEl, { attributes: true });
 
     async function processVideo() {
         const fileInput = document.getElementById('videoFile');
@@ -164,6 +170,7 @@
     }
 </script>
 <script src="background.js"></script>
+<script src="animations.js"></script>
 
 </body>
 </html>

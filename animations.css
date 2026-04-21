@@ -1,0 +1,92 @@
+/* Page Transition Animations */
+:root {
+    --transition-duration: 400ms;
+    --transition-easing: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Disable any "animate-in" animations until JS marks the page ready.
+   Prevents double-play when elements include the class in static HTML. */
+body:not(.animations-ready) [class*="animate-in"] {
+    animation: none !important;
+    opacity: 0 !important;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+@keyframes slideInLeft { from { opacity: 0; transform: translateX(-60px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes slideInUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideInDown { from { opacity: 0; transform: translateY(-40px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes zoomIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+@keyframes bounceIn {
+    0% { opacity: 0; transform: scale(0.3); }
+    50% { opacity: 1; transform: scale(1.05); }
+    70% { transform: scale(0.9); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+body.page-entering { animation: fadeIn var(--transition-duration) var(--transition-easing) forwards; }
+body.page-leaving { animation: fadeOut var(--transition-duration) var(--transition-easing) forwards; }
+
+/* FIXED: Prevent elements from flashing before animation starts */
+body.page-entering .about-panel:not(.animate-in),
+body.page-entering .container:not(.animate-in),
+body.page-entering .page-grid:not(.animate-in),
+body.page-entering .card:not(.animate-in),
+body.page-entering h1:not(.animate-in),
+body.page-entering h2:not(.animate-in),
+body.page-entering button:not(.animate-in) {
+    opacity: 0;
+}
+
+.page-grid.animate-in, .container.animate-in { animation: slideInUp 500ms var(--transition-easing) forwards; }
+.about-panel.animate-in { animation: slideInLeft 500ms var(--transition-easing) forwards; }
+
+.card.animate-in, .input-group.animate-in { animation: slideInUp 400ms var(--transition-easing) forwards; }
+.card.animate-in:nth-child(1) { animation-delay: 150ms; }
+.card.animate-in:nth-child(2) { animation-delay: 200ms; }
+.card.animate-in:nth-child(3) { animation-delay: 250ms; }
+.card.animate-in:nth-child(4) { animation-delay: 300ms; }
+.card.animate-in:nth-child(5) { animation-delay: 350ms; }
+.card.animate-in:nth-child(n+6) { animation-delay: 400ms; }
+
+h1.animate-in, h2.animate-in { animation: slideInDown 400ms var(--transition-easing) forwards; }
+button.animate-in { animation: bounceIn 600ms var(--transition-easing) forwards; animation-delay: 300ms; }
+
+.social-list a.animate-in { animation: zoomIn 400ms var(--transition-easing) forwards; }
+.social-list a.animate-in:nth-child(1) { animation-delay: 200ms; }
+.social-list a.animate-in:nth-child(2) { animation-delay: 300ms; }
+.social-list a.animate-in:nth-child(3) { animation-delay: 400ms; }
+
+.profile-photo.animate-in { animation: bounceIn 600ms var(--transition-easing) forwards; animation-delay: 100ms; }
+
+/* Smooth transitions for interactive elements */
+.card, .social-list a, .home-link, button {
+    transition: transform 0.3s var(--transition-easing), background-color 0.3s var(--transition-easing), box-shadow 0.3s var(--transition-easing);
+}
+
+/* ... keep your existing keyframes ... */
+
+/* FIXED: Hover Lift Effect */
+/* Replacing 'animation: float' with 'transform' prevents the re-triggering bug */
+.card:hover,
+.social-list a:hover,
+.home-link:hover {
+    transform: translateY(-8px);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Ensure buttons and cards have a base transition for smooth landing */
+.card,
+.social-list a,
+.home-link,
+button {
+    transition: transform 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* FIXED: Prevent "Flash" by hiding elements before JS starts the animation */
+body.page-entering .card:not(.animate-in),
+body.page-entering .about-panel:not(.animate-in),
+body.page-entering .container:not(.animate-in),
+body.page-entering h1:not(.animate-in) {
+    opacity: 0;
+}

@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="en"><head>
-//<script src="auth-guard.js"></script>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>voxzymi</title></head>
-<body>  <style>
+  <title>voxzymi</title>
+  <link rel="stylesheet" href="animations.css">
+  <style>
     body { font-family: Inter, system-ui, sans-serif; line-height: 1.5; max-width: 900px; margin: 40px auto; padding: 20px; background: #010409; color: #ffffff; }
     .home-nav { display: flex; justify-content: flex-start; margin-bottom: 20px; }
     .home-link { display: inline-flex; align-items: center; padding: 10px 14px; border-radius: 12px; background: #0d1117; border: 1px solid #ffffff; color: #ffffff; text-decoration: none; transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease; }
@@ -46,6 +46,8 @@
     }
     @media (min-width: 900px) { .container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; } }
   </style>
+</head>
+<body>
 </head>
 <body>
 <canvas id="backgroundCanvas" class="background-canvas"></canvas>
@@ -669,5 +671,6 @@
   }
 </script>
 <script src="background.js"></script>
+<script src="animations.js"></script>
 </body>
 </html>
