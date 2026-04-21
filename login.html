@@ -82,10 +82,8 @@ async function initDeviceSession() {
             screen.width + "x" + screen.height // Resolution
         ].join('|');
 
-        // Final ID is a mix of fingerprint + basic hardware info
         deviceId = `${fingerprint}-${btoa(entropy).substring(0, 8)}`;
         
-        // 4. Save it so it's persistent
         localStorage.setItem('vx_device_id', deviceId);
     }
 
@@ -93,13 +91,7 @@ async function initDeviceSession() {
     return deviceId;
 }
 
-// Usage
-initDeviceSession().then(id => {
-    // You can now send this ID to your server or use it for auth
-    document.body.innerHTML += `<h3>Device ID: ${id}</h3>`;
-});
-
-        async function startLogin() {
+async function startLogin() {
     const statusText = document.getElementById('status');
     const urlParams = new URLSearchParams(window.location.search);
     

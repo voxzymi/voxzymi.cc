@@ -1,9 +1,5 @@
-(function() {
-    // Hide body immediately
-    const style = document.createElement('style');
-    style.innerHTML = `body { display: none !important; }`;
-    style.id = 'auth-hide-body';
-    document.head.appendChild(style);
+(async function() {
+    const root = document.getElementById('root');
 
     async function getFingerprint() {
         try {
@@ -20,53 +16,38 @@
         } catch (e) { return "fp-blocked"; }
     }
 
-    async function checkAuth() {
-    const fp = await getFingerprint();
-    
-    // Read the "id" cookie directly from the browser
-    const match = document.cookie.match(/id=([^;]+)/);
-    const uid = match ? match[1] : null;
+    async function checkAndLoad() {
+        const fp = await getFingerprint();
+        const match = document.cookie.match(/id=([^;]+)/);
+        const uid = match ? match[1] : null;
 
-    if (!uid) {
-        showBlockedPage("no_session");
-        return;
-    }
+        if (!uid) return showBlockedPage("no_session");
 
-    const workerURL = "https://voxzymi-auth.andrewrobloxvapeconfigs.workers.dev/api/check-session";
+        const workerURL = "https://voxzymi-auth.andrewrobloxvapeconfigs.workers.dev/api/check-session";
 
-    try {
-        // We pass the UID and the FP to the worker to check against KV
-        const response = await fetch(`${workerURL}?uid=${uid}&fp=${fp}`);
-        const data = await response.json();
+        try {
+            const response = await fetch(`${workerURL}?uid=${uid}&fp=${fp}`);
+            const data = await response.json();
 
-        if (data.active) {
-            const hideStyle = document.getElementById('auth-hide-body');
-            if (hideStyle) hideStyle.remove();
-        } else {
-            showBlockedPage(data.error);
+            if (data.active) {
+                // FIX: Instead of unhiding, we FETCH the tool content now
+                // Or if the tool is small, the worker can send the HTML in 'data.html'
+                root.innerHTML = data.toolHTML; 
+            } else {
+                showBlockedPage(data.error);
+            }
+        } catch (err) {
+            showBlockedPage("connection_error");
         }
-    } catch (err) {
-        showBlockedPage("connection_error");
     }
-}
 
     function showBlockedPage(errorType) {
-        let title = "Access Denied";
-        let message = "Please log in via Discord to access these tools.";
-        
-        if (errorType === "device_mismatch") {
-            title = "Session Conflict";
-            message = "You are currently logged in on another device. Please log out there or reset your session in Discord.";
-        }
-
-        document.documentElement.innerHTML = `
-            <div style="background:#0a0a0a; color:white; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:sans-serif; text-align:center; padding:20px;">
-                <div style="font-size:50px; margin-bottom:20px;">🔒</div>
-                <h1 style="color:#ff4d4d; margin:0;">${title}</h1>
-                <p style="color:#ccc; max-width:400px; line-height:1.5;">${message}</p>
-                <a href="https://discord.com" style="margin-top:20px; padding:12px 25px; background:#5865F2; color:white; text-decoration:none; border-radius:5px; font-weight:bold;">Return to Discord</a>
+        root.innerHTML = `
+            <div style="color:white; height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; font-family:sans-serif;">
+                <h1 style="color:#ff4d4d;">Access Denied</h1>
+                <p>${errorType === 'device_mismatch' ? 'Log out of your other device first.' : 'Please log in via Discord.'}</p>
             </div>`;
     }
 
-    checkAuth();
+    checkAndLoad();
 })();
