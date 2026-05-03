@@ -1,37 +1,206 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>voxzymi</title>
   <link rel="stylesheet" href="animations.css">
   <style>
-    body { font-family: Inter, system-ui, sans-serif; line-height: 1.5; max-width: 900px; margin: 40px auto; padding: 20px; background: #010409; color: #ffffff; }
-    .home-nav { display: flex; justify-content: flex-start; margin-bottom: 20px; }
-    .home-link { display: inline-flex; align-items: center; padding: 10px 14px; border-radius: 12px; background: #0d1117; border: 1px solid #ffffff; color: #ffffff; text-decoration: none; transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease; }
-    .home-link:hover { background: #161b22; transform: translateY(-1px); border-color: #ffffff; }
-    .home-link img { width: 32px; height: auto; filter: invert(1); }
-    .container { background: #0d1117; padding: 30px; border-radius: 16px; box-shadow: 0 18px 48px rgba(0, 0, 0, 0.18); }
-    .panel { background: transparent; padding: 0; border: none; }
-    .panel h1 { margin: 0 0 10px; font-size: 1.6rem; }
-    .panel p { margin: 0 0 16px; color: #ffffff; }
-    .input-group { margin-bottom: 20px; }
-    label { display: block; font-weight: 700; margin-bottom: 10px; color: #c9d1d9; }
-    input[type="file"], select, input[type="range"] { width: 100%; padding: 14px; margin-bottom: 10px; border: 1px solid #30363d; border-radius: 12px; box-sizing: border-box; background: #0b1117; color: #ffffff; }
-    .display-value { width: 100%; padding: 14px; margin-bottom: 10px; border: 1px solid #30363d; border-radius: 12px; box-sizing: border-box; background: #0b1117; color: #c9d1d9; font-size: 15px; }
-    input[type="range"] { height: 24px; cursor: pointer; }
-    .control-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
-    .control-row > * { flex: 1 1 180px; }
-    button { background: #ffffff; color: #010409; border: none; padding: 15px 18px; border-radius: 10px; cursor: pointer; font-size: 16px; font-weight: 700; transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease; }
-    button:hover:not(:disabled) { background: #f7f7f7; transform: translateY(-1px); box-shadow: 0 12px 24px rgba(255, 255, 255, 0.18); }
-    button:disabled { background: #21262d; color: #8b949e; cursor: not-allowed; box-shadow: none; transform: none; }
-    button.danger { background: #ff4e4e; color: #ffffff; }
-    button.danger:hover:not(:disabled) { background: #ff6666; }
-    video, canvas { width: 100%; max-height: 520px; border-radius: 10px; background: #000; border: 1px solid #30363d; display: block; }
-    .status { font-family: monospace; padding: 14px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid #30363d; color: #ffffff; white-space: pre-wrap; }
-    .slider-label { display: flex; justify-content: space-between; font-size: 12px; color: #8b949e; margin-bottom: 4px; }
-    .progress-bar-wrap { height: 6px; background: #21262d; border-radius: 3px; margin: 10px 0; overflow: hidden; }
-    .progress-bar { height: 100%; width: 0%; background: #ffffff; border-radius: 3px; transition: width 0.1s; }
+    body {
+      font-family: Inter, system-ui, sans-serif;
+      line-height: 1.5;
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #010409;
+      color: #ffffff;
+    }
+
+    .home-nav {
+      display: flex;
+      justify-content: flex-start;
+      margin-bottom: 20px;
+    }
+
+    .home-link {
+      display: inline-flex;
+      align-items: center;
+      padding: 10px 14px;
+      border-radius: 12px;
+      background: #0d1117;
+      border: 1px solid #ffffff;
+      color: #ffffff;
+      text-decoration: none;
+      transition: background 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+    }
+
+    .home-link:hover {
+      background: #161b22;
+      transform: translateY(-1px);
+      border-color: #ffffff;
+    }
+
+    .home-link img {
+      width: 32px;
+      height: auto;
+      filter: invert(1);
+    }
+
+    .container {
+      background: #0d1117;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.18);
+    }
+
+    .panel {
+      background: transparent;
+      padding: 0;
+      border: none;
+    }
+
+    .panel h1 {
+      margin: 0 0 10px;
+      font-size: 1.6rem;
+    }
+
+    .panel p {
+      margin: 0 0 16px;
+      color: #ffffff;
+    }
+
+    .input-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #c9d1d9;
+    }
+
+    input[type="file"],
+    select,
+    input[type="range"] {
+      width: 100%;
+      padding: 14px;
+      margin-bottom: 10px;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      box-sizing: border-box;
+      background: #0b1117;
+      color: #ffffff;
+    }
+
+    .display-value {
+      width: 100%;
+      padding: 14px;
+      margin-bottom: 10px;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      box-sizing: border-box;
+      background: #0b1117;
+      color: #c9d1d9;
+      font-size: 15px;
+    }
+
+    input[type="range"] {
+      height: 24px;
+      cursor: pointer;
+    }
+
+    .control-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .control-row>* {
+      flex: 1 1 180px;
+    }
+
+    button {
+      background: #ffffff;
+      color: #010409;
+      border: none;
+      padding: 15px 18px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 700;
+      transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    button:hover:not(:disabled) {
+      background: #f7f7f7;
+      transform: translateY(-1px);
+      box-shadow: 0 12px 24px rgba(255, 255, 255, 0.18);
+    }
+
+    button:disabled {
+      background: #21262d;
+      color: #8b949e;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    button.danger {
+      background: #ff4e4e;
+      color: #ffffff;
+    }
+
+    button.danger:hover:not(:disabled) {
+      background: #ff6666;
+    }
+
+    video,
+    canvas {
+      width: 100%;
+      max-height: 520px;
+      border-radius: 10px;
+      background: #000;
+      border: 1px solid #30363d;
+      display: block;
+    }
+
+    .status {
+      font-family: monospace;
+      padding: 14px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid #30363d;
+      color: #ffffff;
+      white-space: pre-wrap;
+    }
+
+    .slider-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #8b949e;
+      margin-bottom: 4px;
+    }
+
+    .progress-bar-wrap {
+      height: 6px;
+      background: #21262d;
+      border-radius: 3px;
+      margin: 10px 0;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: #ffffff;
+      border-radius: 3px;
+      transition: width 0.1s;
+    }
+
     .background-canvas {
       position: fixed;
       inset: 0;
@@ -44,633 +213,636 @@
       border: none;
       border-radius: 0;
     }
-    @media (min-width: 900px) { .container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; } }
+
+    @media (min-width: 900px) {
+      .container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+    }
   </style>
 </head>
+
 <body>
-</head>
-<body>
-<canvas id="backgroundCanvas" class="background-canvas"></canvas>
+  <canvas id="backgroundCanvas" class="background-canvas"></canvas>
 
-<div class="home-nav">
-  <a href="index.html" class="home-link">
-    <img src="logo/home.png" alt="Home">
-  </a>
-</div>
+  <div class="home-nav">
+    <a href="index.html" class="home-link">
+      <img src="logo/home.png" alt="Home">
+    </a>
+  </div>
 
-<div class="container">
-  <div class="panel">
-    <h1>Interpolation Tool</h1>
-    <p>Add more FPS to your videos using Optical Flow</p>
+  <div class="container">
+    <div class="panel">
+      <h1>Interpolation Tool</h1>
+      <p>Add more FPS to your videos using Optical Flow</p>
 
-    <div class="input-group">
-      <label for="videoUpload">Video File</label>
-      <input id="videoUpload" type="file" accept="video/*">
-    </div>
-
-    
-
-    <div class="input-group">
-      <div class="slider-label">
-        <span>Frames Between Each Pair</span>
-        <span id="extraFramesValue">1</span>
+      <div class="input-group">
+        <label for="videoUpload">Video File</label>
+        <input id="videoUpload" type="file" accept="video/*">
       </div>
-      <input id="extraFrames" type="range" min="1" max="7" step="1" value="1">
-      <small style="color:#ffffff;">
-        1 - doubles FPS, 2 - triples FPS, etc.
-      </small>
+
+      <div class="input-group">
+        <div class="slider-label">
+          <span>Frames Between Each Pair</span>
+          <span id="extraFramesValue">1</span>
+        </div>
+        <input id="extraFrames" type="range" min="1" max="7" step="1" value="1">
+        <small style="color:#ffffff;">
+          1 - doubles FPS, 2 - triples FPS, etc.
+        </small>
+      </div>
+
+      <div class="input-group">
+        <label for="sourceFpsDisplay">Target FPS</label>
+        <div id="sourceFpsDisplay" class="display-value">67</div>
+      </div>
+
+      <div class="input-group">
+        <label for="bitrateDisplay">Target Bitrate (Mbps)</label>
+        <div id="bitrateDisplay" class="display-value">67</div>
+      </div>
+
+      <div class="control-row" style="margin-bottom:16px;">
+        <button id="renderBtn" disabled>Render &amp; Download</button>
+        <button id="cancelBtn" disabled class="danger">Cancel</button>
+      </div>
+
+      <div class="progress-bar-wrap">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="status" id="statusText">Status: Waiting for video</div>
     </div>
 
-    <div class="input-group">
-      <label for="sourceFpsDisplay">Target FPS</label>
-      <div id="sourceFpsDisplay" class="display-value">67</div>
-    </div>
+    <div class="panel">
+      <h1>Preview</h1>
 
-    <div class="input-group">
-      <label for="bitrateDisplay">Target Bitrate (Mbps)</label>
-      <div id="bitrateDisplay" class="display-value">67</div>
+      <video id="videoPlayer" controls playsinline></video>
+      <canvas id="workCanvas" hidden></canvas>
     </div>
-
-    <div class="control-row" style="margin-bottom:16px;">
-      <button id="renderBtn" disabled>Render &amp; Download</button>
-      <button id="cancelBtn" disabled class="danger">Cancel</button>
-    </div>
-
-    <div class="progress-bar-wrap"><div class="progress-bar" id="progressBar"></div></div>
-    <div class="status" id="statusText">Status: Waiting for video</div>
   </div>
 
-  <div class="panel">
-    <h1>Preview</h1>
-    
-    <video id="videoPlayer" controls playsinline></video>
-    <canvas id="workCanvas" hidden></canvas>
-  </div>
-</div>
+  <script src="webm-muxer.js"></script>
+  <script>
+    const videoUpload = document.getElementById('videoUpload');
+    const extraFrames = document.getElementById('extraFrames');
+    const extraFramesVal = document.getElementById('extraFramesValue');
+    const bitrateDisplay = document.getElementById('bitrateDisplay');
+    const sourceFpsDisplay = document.getElementById('sourceFpsDisplay');
+    const renderBtn = document.getElementById('renderBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const statusText = document.getElementById('statusText');
+    const progressBar = document.getElementById('progressBar');
+    const videoPlayer = document.getElementById('videoPlayer');
+    const workCanvas = document.getElementById('workCanvas');
+    const ctx = workCanvas.getContext('2d', { willReadFrequently: true });
 
-<script src="webm-muxer.js"></script>
-<script>
-  const videoUpload   = document.getElementById('videoUpload');
-  const extraFrames   = document.getElementById('extraFrames');
-  const extraFramesVal= document.getElementById('extraFramesValue');
-  const bitrateDisplay= document.getElementById('bitrateDisplay');
-  const sourceFpsDisplay = document.getElementById('sourceFpsDisplay');
-  const renderBtn     = document.getElementById('renderBtn');
-  const cancelBtn     = document.getElementById('cancelBtn');
-  const statusText    = document.getElementById('statusText');
-  const progressBar   = document.getElementById('progressBar');
-  const videoPlayer   = document.getElementById('videoPlayer');
-  const workCanvas    = document.getElementById('workCanvas');
-  const ctx           = workCanvas.getContext('2d');
-
-  const hiddenVideo = document.createElement('video');
-  hiddenVideo.playsInline = true;
-  hiddenVideo.muted = true;
-  hiddenVideo.crossOrigin = 'anonymous';
-  hiddenVideo.style.display = 'none';
-  document.body.appendChild(hiddenVideo);
-
-  let videoURL = null;
-  let cancelled = false;
-  let detectedFps = 30;
-  let originalBitrate = 50;
-  let decodedAudioBuffer = null;
-  const supportsWebCodecs = typeof VideoEncoder !== 'undefined' &&
-    typeof AudioEncoder !== 'undefined' &&
-    typeof VideoFrame !== 'undefined' &&
-    typeof WebMMuxer !== 'undefined';
-
-  function setStatus(msg) { statusText.textContent = 'Status: ' + msg; }
-  function setProgress(p) { progressBar.style.width = Math.min(100, Math.max(0, p * 100)).toFixed(1) + '%'; }
-
-  async function decodeAudioFile(file) {
-    const arrayBuffer = await file.arrayBuffer();
-    const context = new AudioContext();
-    try {
-      return await context.decodeAudioData(arrayBuffer);
-    } finally {
-      context.close();
-    }
-  }
-
-  async function resampleAudioBuffer(buffer, targetRate) {
-    if (buffer.sampleRate === targetRate) return buffer;
-    const offline = new OfflineAudioContext(buffer.numberOfChannels, Math.ceil(buffer.duration * targetRate), targetRate);
-    const source = offline.createBufferSource();
-    source.buffer = buffer;
-    source.connect(offline.destination);
-    source.start(0);
-    return offline.startRendering();
-  }
-
-  function createAudioDataChunk(buffer, offset, frameCount, timestamp) {
-    const channels = buffer.numberOfChannels;
-    const interleaved = new Float32Array(frameCount * channels);
-    for (let i = 0; i < frameCount; i++) {
-      for (let c = 0; c < channels; c++) {
-        interleaved[i * channels + c] = buffer.getChannelData(c)[offset + i];
-      }
-    }
-    return new AudioData({
-      format: 'f32',
-      sampleRate: buffer.sampleRate,
-      numberOfChannels: channels,
-      numberOfFrames: frameCount,
-      timestamp,
-      data: interleaved
-    });
-  }
-
-  async function encodeAudioBuffer(buffer, muxer) {
-    const sampleRate = 48000;
-    const target = buffer.sampleRate === sampleRate ? buffer : await resampleAudioBuffer(buffer, sampleRate);
-    const channels = target.numberOfChannels;
-    const chunkSize = 2048;
-
-    const audioEncoder = new AudioEncoder({
-      output: (chunk, meta) => muxer.addAudioChunk(chunk, meta),
-      error: (e) => console.error('AudioEncoder error', e)
-    });
-
-    audioEncoder.configure({
-      codec: 'opus',
-      sampleRate,
-      numberOfChannels: channels,
-      bitrate: 128000
-    });
-
-    const frames = target.length;
-    for (let offset = 0; offset < frames; offset += chunkSize) {
-      const frameCount = Math.min(chunkSize, frames - offset);
-      const timestamp = Math.round((offset / sampleRate) * 1_000_000);
-      const audioData = createAudioDataChunk(target, offset, frameCount, timestamp);
-      audioEncoder.encode(audioData);
-      audioData.close();
-    }
-
-    await audioEncoder.flush();
-    audioEncoder.close();
-  }
-
-  function lockButtonsAtStartup() {
-    renderBtn.disabled = true;
-    cancelBtn.disabled = true;
-    setStatus('Loading');
-
-    const unlock = () => {
-      renderBtn.disabled = !videoUpload.files.length;
-      cancelBtn.disabled = true;
-      setStatus('Waiting for video');
-    };
-
-    if (document.readyState === 'complete') {
-      unlock();
-    } else {
-      window.addEventListener('load', unlock, { once: true });
-    }
-  }
-
-  lockButtonsAtStartup();
-
-  function once(el, evt) {
-    return new Promise((resolve, reject) => {
-      const ok  = () => { el.removeEventListener(evt,   ok);  el.removeEventListener('error', err); resolve(); };
-      const err = () => { el.removeEventListener(evt,   ok);  el.removeEventListener('error', err); reject(new Error('media error')); };
-      el.addEventListener(evt,   ok);
-      el.addEventListener('error', err);
-    });
-  }
-
-  extraFrames.addEventListener('input', () => {
-    bitrateDisplay.textContent = (parseInt(extraFrames.value) + 1) * originalBitrate;
-    extraFramesVal.textContent = extraFrames.value;
-    sourceFpsDisplay.textContent = (parseInt(extraFrames.value) + 1) * detectedFps;
-  });
-
-  videoUpload.addEventListener('change', async () => {
-    const file = videoUpload.files[0];
-    if (!file) return;
-    if (videoURL) URL.revokeObjectURL(videoURL);
-    videoURL = URL.createObjectURL(file);
-
-    videoPlayer.src = videoURL;
-    hiddenVideo.src = videoURL;
-
-    setStatus('Loading metadata…');
-    setProgress(0);
-
-    try {
-      await once(videoPlayer, 'loadedmetadata');
-      await once(hiddenVideo, 'loadedmetadata');
-      decodedAudioBuffer = await decodeAudioFile(file);
-    } catch (error) {
-      decodedAudioBuffer = null;
-    }
-
-    workCanvas.width  = videoPlayer.videoWidth;
-    workCanvas.height = videoPlayer.videoHeight;
-
-    detectedFps = await estimateVideoFramerate(hiddenVideo);
-    sourceFpsDisplay.textContent = detectedFps.toFixed(1);
-    const estimatedBitrate = estimateBitrateMbps(file, hiddenVideo.duration);
-    originalBitrate = estimatedBitrate;
-    bitrateDisplay.textContent = originalBitrate * (parseInt(extraFrames.value) + 1);
-
-    setStatus(`Loaded: ${file.name}  |  ${hiddenVideo.videoWidth}×${hiddenVideo.videoHeight}  |  ${hiddenVideo.duration.toFixed(2)}s | Input bitrate: ${originalBitrate} Mbps`);
-    renderBtn.disabled = false;
-  });
-
-  cancelBtn.addEventListener('click', () => {
-    cancelled = true;
-    cancelBtn.disabled = true;
-    setStatus('Cancelling render');
-  });
-
-  renderBtn.addEventListener('click', startRender);
-
-  async function startRender() {
-    if (!videoURL) { setStatus('Please load a video first'); return; }
-
-    window.setBackgroundEnabled?.(false);
-    cancelled = false;
-    renderBtn.disabled = true;
-    cancelBtn.disabled = false;
-    setProgress(0);
-
-    const extra         = parseInt(extraFrames.value, 10);
-    const srcFps         = detectedFps || 30;
-    const outFps         = srcFps * (extra + 1);
-
-    const preserveBitrate = Math.round(originalBitrate * outFps / srcFps);
-    bitrateDisplay.textContent = preserveBitrate;
-
-    setStatus(`Starting render…\nUsing bitrate: ${preserveBitrate} Mbps`);
-
-    const W = hiddenVideo.videoWidth;
-    const H = hiddenVideo.videoHeight;
-    const duration  = hiddenVideo.duration;
-    const totalSrc  = Math.round(duration * srcFps);
-
-    const capCanvas = document.createElement('canvas');
-    capCanvas.width = W; capCanvas.height = H;
-    const capCtx    = capCanvas.getContext('2d');
-
-    const frames = [];
-
-    for (let i = 0; i <= totalSrc; i++) {
-      if (cancelled) { finishCancelled(); return; }
-
-      const t = Math.min(duration, i / srcFps);
-      hiddenVideo.currentTime = t;
-      try { await once(hiddenVideo, 'seeked'); } catch { break; }
-
-      capCtx.drawImage(hiddenVideo, 0, 0, W, H);
-      frames.push(await createImageBitmap(capCanvas));
-
-      setProgress((i / totalSrc) * 0.5);         
-      setStatus(`Collecting frames: ${i}/${totalSrc}  (${srcFps} fps source)`);
-    }
-
-    if (frames.length < 2) { setStatus('Not enough frames collected'); resetUI(); return; }
-
-    if (!supportsWebCodecs || typeof AudioEncoder === 'undefined') {
-      setStatus('WebCodecs audio/video capture is not available in this browser');
-      resetUI();
-      return;
-    }
-
-    workCanvas.hidden = false;
-
-    const hasAudio = decodedAudioBuffer !== null;
-    const muxerOptions = {
-      target: new WebMMuxer.ArrayBufferTarget(),
-      video: {
-        codec: 'V_VP9',
-        width: W,
-        height: H,
-        frameRate: outFps
-      }
-    };
-
-    if (hasAudio) {
-      muxerOptions.audio = {
-        codec: 'A_OPUS',
-        sampleRate: 48000,
-        numberOfChannels: decodedAudioBuffer.numberOfChannels,
-        bitrate: 128000
-      };
-    }
-
-    const muxer = new WebMMuxer.Muxer(muxerOptions);
-    const audioPromise = hasAudio ? encodeAudioBuffer(decodedAudioBuffer, muxer) : Promise.resolve();
-
-    const encoder = new VideoEncoder({
-      output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
-      error: (e) => console.error('VideoEncoder error ', e)
-    });
-
-    encoder.configure({
-      codec: 'vp09.00.10.08',
-      width: W,
-      height: H,
-      bitrate: preserveBitrate * 1_000_000,
-      framerate: outFps
-    });
-
-    hiddenVideo.currentTime = 0;
+    const hiddenVideo = document.createElement('video');
+    hiddenVideo.playsInline = true;
     hiddenVideo.muted = true;
-    await hiddenVideo.play().catch(() => {});
+    hiddenVideo.crossOrigin = 'anonymous';
+    hiddenVideo.style.display = 'none';
+    document.body.appendChild(hiddenVideo);
 
-    const frameInterval = 1000 / outFps;
-    const segCount      = frames.length - 1;
-    const totalOutFrames= segCount * (extra + 1);
-    let drawnFrames     = 0;
+    let videoURL = null;
+    let cancelled = false;
+    let detectedFps = 30;
+    let originalBitrate = 50;
+    let decodedAudioBuffer = null;
 
-    const flowOptions = {
-      blockSize: Math.max(16, Math.min(32, Math.floor(Math.max(W, H) / 64))),
-      searchRadius: 8
-    };
+    const supportsWebCodecs = typeof VideoEncoder !== 'undefined' &&
+      typeof AudioEncoder !== 'undefined' &&
+      typeof VideoFrame !== 'undefined' &&
+      typeof WebMMuxer !== 'undefined';
 
-    for (let seg = 0; seg < segCount; seg++) {
-      if (cancelled) break;
-
-      const start = frames[seg];
-      const end   = frames[seg + 1];
-
-      setStatus(`Computing optical flow for segment ${seg + 1}/${segCount}`);
-      const flowData = computeOpticalFlow(start, end, W, H, flowOptions.blockSize, flowOptions.searchRadius);
-
-      for (let step = 0; step <= extra; step++) {
-        if (cancelled) break;
-
-        const t = step / (extra + 1);
-        renderInterpolatedFrame(start, end, flowData, t, W, H, ctx);
-
-        const timestamp = drawnFrames * 1000000 / outFps;
-        const frame = new VideoFrame(workCanvas, { timestamp });
-        encoder.encode(frame, { keyFrame: drawnFrames === 0 });
-        frame.close();
-
-        drawnFrames++;
-        const overallProgress = 0.5 + (drawnFrames / totalOutFrames) * 0.5;
-        setProgress(overallProgress);
-        setStatus(
-          `Rendering frame ${drawnFrames}/${totalOutFrames}\n` +
-          `Segment ${seg + 1}/${segCount}, interp step ${step}/${extra}\n` +
-          `Output: ${outFps} fps`
-        );
-
-        await new Promise(r => setTimeout(r, frameInterval));
-      }
-    }
-
-    hiddenVideo.pause();
-    await audioPromise;
-
-    await encoder.flush();
-    encoder.close();
-    muxer.finalize();
-
-    if (cancelled) { finishCancelled(); return; }
-
-    const blob = new Blob([muxer.target.buffer], { type: 'video/webm' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
-    a.download = `interpolated_${srcFps}to${outFps}fps_${Date.now()}.webm`;
-    a.click();
-    setStatus(`Done!\n${srcFps}fps  →  ${outFps}fps`);
-
-    setProgress(1);
-    resetUI();
-  }
-
-
-  function finishCancelled() {
-    setStatus('Render cancelled.');
-    setProgress(0);
-    resetUI();
-  }
-
-  function resetUI() {
-    renderBtn.disabled = false;
-    cancelBtn.disabled = true;
-    workCanvas.hidden  = true;
-    window.setBackgroundEnabled?.(true);
-  }
-
-  function estimateVideoFramerate(video) {
-    return new Promise(resolve => {
-      const fallback = () => {
-        let lastTime = video.currentTime;
-        let frames = 0;
-        const start = performance.now();
-        function loop() {
-          if (cancelled) return resolve(30);
-          const now = performance.now();
-          if (video.currentTime !== lastTime) {
-            frames++;
-            lastTime = video.currentTime;
-          }
-          if (now - start < 1000) {
-            requestAnimationFrame(loop);
-          } else {
-            resolve(Math.max(24, Math.min(120, Math.round(frames))));
-          }
+    // --- WORKER DEFINITION (Inline with a Blob) ---
+    const workerCode = `
+      function createGrayscale(imageData) {
+        const data = imageData.data;
+        const gray = new Float32Array(imageData.width * imageData.height);
+        for (let i = 0, j = 0; i < data.length; i += 4, j++) {
+          gray[j] = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
         }
-        video.currentTime = 0;
-        video.muted = true;
-        video.play().then(() => requestAnimationFrame(loop)).catch(() => resolve(30));
-      };
-
-      if (typeof video.requestVideoFrameCallback === 'function') {
-        let lastMediaTime = null;
-        let samples = [];
-        let count = 0;
-
-        const onFrame = (_, meta) => {
-          if (lastMediaTime !== null) {
-            samples.push(meta.mediaTime - lastMediaTime);
-          }
-          lastMediaTime = meta.mediaTime;
-          count += 1;
-          if (count < 12) {
-            video.requestVideoFrameCallback(onFrame);
-          } else {
-            const avg = samples.length ? samples.reduce((a, b) => a + b, 0) / samples.length : 1 / 30;
-            resolve(Math.max(24, Math.min(120, Math.round(1 / avg))));
-          }
-        };
-
-        video.currentTime = 0;
-        video.muted = true;
-        video.play().then(() => video.requestVideoFrameCallback(onFrame)).catch(fallback);
-      } else {
-        fallback();
+        return gray;
       }
-    });
-  }
 
-  function estimateBitrateMbps(file, duration) {
-    if (!duration || duration <= 0) return 50;
-    return Math.max(1, Math.round((file.size * 8) / duration / 1_000_000));
-  }
+      function clamp(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+      }
 
-  function getImageDataFromBitmap(bitmap, width, height) {
-    const tmp = document.createElement('canvas');
-    tmp.width = width;
-    tmp.height = height;
-    const tmpCtx = tmp.getContext('2d');
-    tmpCtx.drawImage(bitmap, 0, 0, width, height);
-    return tmpCtx.getImageData(0, 0, width, height);
-  }
+      function sampleRGBA(pixels, width, height, x, y) {
+        x = clamp(x, 0, width - 1); y = clamp(y, 0, height - 1);
+        const x0 = Math.floor(x), y0 = Math.floor(y);
+        const x1 = Math.min(x0 + 1, width - 1), y1 = Math.min(y0 + 1, height - 1);
+        const hx = x - x0, hy = y - y0;
+        const w00 = (1 - hx) * (1 - hy), w01 = hx * (1 - hy), w10 = (1 - hx) * hy, w11 = hx * hy;
+        const i00 = (y0 * width + x0) * 4, i01 = (y0 * width + x1) * 4;
+        const i10 = (y1 * width + x0) * 4, i11 = (y1 * width + x1) * 4;
+        return [
+          pixels[i00]*w00 + pixels[i01]*w01 + pixels[i10]*w10 + pixels[i11]*w11,
+          pixels[i00+1]*w00 + pixels[i01+1]*w01 + pixels[i10+1]*w10 + pixels[i11+1]*w11,
+          pixels[i00+2]*w00 + pixels[i01+2]*w01 + pixels[i10+2]*w10 + pixels[i11+2]*w11,
+          pixels[i00+3]*w00 + pixels[i01+3]*w01 + pixels[i10+3]*w10 + pixels[i11+3]*w11
+        ];
+      }
 
-  function createGrayscale(imageData) {
-    const { data, width, height } = imageData;
-    const gray = new Float32Array(width * height);
-    for (let i = 0, j = 0; i < data.length; i += 4, j++) {
-      gray[j] = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
-    }
-    return gray;
-  }
+      function computeOpticalFlow(startGray, endGray, width, height, blockSize, searchRadius) {
+        const blocksX = Math.ceil(width / blockSize);
+        const blocksY = Math.ceil(height / blockSize);
+        const flow = new Float32Array(blocksX * blocksY * 2);
 
-  function clamp(value, min, max) {
-    return Math.max(min, Math.min(max, value));
-  }
+        for (let by = 0; by < blocksY; by++) {
+          for (let bx = 0; bx < blocksX; bx++) {
+            const x0 = bx * blockSize, y0 = by * blockSize;
+            const bw = Math.min(blockSize, width - x0), bh = Math.min(blockSize, height - y0);
+            let bestError = Infinity, bestDx = 0, bestDy = 0;
 
-  function sampleRGBA(pixels, width, height, x, y) {
-    x = clamp(x, 0, width - 1);
-    y = clamp(y, 0, height - 1);
-
-    const x0 = Math.floor(x);
-    const y0 = Math.floor(y);
-    const x1 = Math.min(x0 + 1, width - 1);
-    const y1 = Math.min(y0 + 1, height - 1);
-
-    const hx = x - x0;
-    const hy = y - y0;
-    const w00 = (1 - hx) * (1 - hy);
-    const w01 = hx * (1 - hy);
-    const w10 = (1 - hx) * hy;
-    const w11 = hx * hy;
-
-    const i00 = (y0 * width + x0) * 4;
-    const i01 = (y0 * width + x1) * 4;
-    const i10 = (y1 * width + x0) * 4;
-    const i11 = (y1 * width + x1) * 4;
-
-    return [
-      pixels[i00] * w00 + pixels[i01] * w01 + pixels[i10] * w10 + pixels[i11] * w11,
-      pixels[i00 + 1] * w00 + pixels[i01 + 1] * w01 + pixels[i10 + 1] * w10 + pixels[i11 + 1] * w11,
-      pixels[i00 + 2] * w00 + pixels[i01 + 2] * w01 + pixels[i10 + 2] * w10 + pixels[i11 + 2] * w11,
-      pixels[i00 + 3] * w00 + pixels[i01 + 3] * w01 + pixels[i10 + 3] * w10 + pixels[i11 + 3] * w11
-    ];
-  }
-
-  function computeOpticalFlow(startBitmap, endBitmap, width, height, blockSize, searchRadius) {
-    const startImage = getImageDataFromBitmap(startBitmap, width, height);
-    const endImage = getImageDataFromBitmap(endBitmap, width, height);
-    const startGray = createGrayscale(startImage);
-    const endGray = createGrayscale(endImage);
-
-    const blocksX = Math.ceil(width / blockSize);
-    const blocksY = Math.ceil(height / blockSize);
-    const flow = new Float32Array(blocksX * blocksY * 2);
-
-    for (let by = 0; by < blocksY; by++) {
-      for (let bx = 0; bx < blocksX; bx++) {
-        const x0 = bx * blockSize;
-        const y0 = by * blockSize;
-        const bw = Math.min(blockSize, width - x0);
-        const bh = Math.min(blockSize, height - y0);
-
-        let bestError = Infinity;
-        let bestDx = 0;
-        let bestDy = 0;
-
-        for (let dy = -searchRadius; dy <= searchRadius; dy++) {
-          for (let dx = -searchRadius; dx <= searchRadius; dx++) {
-            let error = 0;
-
-            for (let y = 0; y < bh && error < bestError; y++) {
-              const row = (y0 + y) * width;
-              for (let x = 0; x < bw; x++) {
-                const sx = x0 + x;
-                const sy = y0 + y;
-                const tx = clamp(sx + dx, 0, width - 1);
-                const ty = clamp(sy + dy, 0, height - 1);
-                const diff = startGray[row + sx] - endGray[ty * width + tx];
-                error += diff * diff;
+            for (let dy = -searchRadius; dy <= searchRadius; dy++) {
+              for (let dx = -searchRadius; dx <= searchRadius; dx++) {
+                let error = 0;
+                for (let y = 0; y < bh && error < bestError; y++) {
+                  const row = (y0 + y) * width;
+                  for (let x = 0; x < bw; x++) {
+                    const sx = x0 + x, sy = y0 + y;
+                    const tx = clamp(sx + dx, 0, width - 1), ty = clamp(sy + dy, 0, height - 1);
+                    const diff = startGray[row + sx] - endGray[ty * width + tx];
+                    error += diff * diff;
+                  }
+                }
+                if (error < bestError) { bestError = error; bestDx = dx; bestDy = dy; }
               }
             }
+            const index = (by * blocksX + bx) * 2;
+            flow[index] = bestDx; flow[index + 1] = bestDy;
+          }
+        }
+        return { blocksX, blocksY, blockSize, flow };
+      }
 
-            if (error < bestError) {
-              bestError = error;
-              bestDx = dx;
-              bestDy = dy;
+      self.onmessage = async function(e) {
+        const { id, startBitmap, endBitmap, width, height, extra, flowOptions } = e.data;
+        
+        const canvas = new OffscreenCanvas(width, height);
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
+        
+        ctx.drawImage(startBitmap, 0, 0);
+        const startImg = ctx.getImageData(0, 0, width, height);
+        const startGray = createGrayscale(startImg);
+        
+        ctx.drawImage(endBitmap, 0, 0);
+        const endImg = ctx.getImageData(0, 0, width, height);
+        const endGray = createGrayscale(endImg);
+
+        startBitmap.close();
+        endBitmap.close();
+
+        const flowData = computeOpticalFlow(startGray, endGray, width, height, flowOptions.blockSize, flowOptions.searchRadius);
+        
+        const outputFrames = [];
+        for (let step = 0; step <= extra; step++) {
+          const t = step / (extra + 1);
+          const output = ctx.createImageData(width, height);
+          const outData = output.data;
+          const startPixels = startImg.data;
+          const endPixels = endImg.data;
+          const { blocksX, blocksY, blockSize, flow } = flowData;
+
+          for (let by = 0; by < blocksY; by++) {
+            for (let bx = 0; bx < blocksX; bx++) {
+              const x0 = bx * blockSize;
+              const y0 = by * blockSize;
+              const dx = flow[(by * blocksX + bx) * 2];
+              const dy = flow[(by * blocksX + bx) * 2 + 1];
+
+              for (let y = 0; y < blockSize; y++) {
+                const py = y0 + y;
+                if (py >= height) break;
+                for (let x = 0; x < blockSize; x++) {
+                  const px = x0 + x;
+                  if (px >= width) break;
+
+                  const sx = px - dx * t, sy = py - dy * t;
+                  const ex = px + dx * (1 - t), ey = py + dy * (1 - t);
+                  const startColor = sampleRGBA(startPixels, width, height, sx, sy);
+                  const endColor = sampleRGBA(endPixels, width, height, ex, ey);
+                  
+                  const idx = (py * width + px) * 4;
+                  const invT = 1 - t;
+
+                  outData[idx] = startColor[0] * invT + endColor[0] * t;
+                  outData[idx + 1] = startColor[1] * invT + endColor[1] * t;
+                  outData[idx + 2] = startColor[2] * invT + endColor[2] * t;
+                  outData[idx + 3] = startColor[3] * invT + endColor[3] * t;
+                }
+              }
             }
           }
+          ctx.putImageData(output, 0, 0);
+          const bmp = await createImageBitmap(canvas);
+          outputFrames.push(bmp);
         }
+        
+        self.postMessage({ id, outputFrames }, outputFrames);
+      };
+    `;
 
-        const index = (by * blocksX + bx) * 2;
-        flow[index] = bestDx;
-        flow[index + 1] = bestDy;
-      }
-    }
+    const workerBlob = new Blob([workerCode], { type: 'application/javascript' });
+    const opticalFlowWorker = new Worker(URL.createObjectURL(workerBlob));
 
-    return { startImage, endImage, blocksX, blocksY, blockSize, flow };
-  }
-
-  function renderInterpolatedFrame(startBitmap, endBitmap, flowData, t, width, height, ctx) {
-    if (t === 0) {
-      ctx.drawImage(startBitmap, 0, 0);
-      return;
-    }
-
-    const output = ctx.createImageData(width, height);
-    const outData = output.data;
-    const { startImage, endImage, blocksX, blocksY, blockSize, flow } = flowData;
-    const startPixels = startImage.data;
-    const endPixels = endImage.data;
-
-    for (let by = 0; by < blocksY; by++) {
-      for (let bx = 0; bx < blocksX; bx++) {
-        const x0 = bx * blockSize;
-        const y0 = by * blockSize;
-        const dx = flow[(by * blocksX + bx) * 2];
-        const dy = flow[(by * blocksX + bx) * 2 + 1];
-
-        for (let y = 0; y < blockSize; y++) {
-          const py = y0 + y;
-          if (py >= height) break;
-
-          for (let x = 0; x < blockSize; x++) {
-            const px = x0 + x;
-            if (px >= width) break;
-
-            const sx = px - dx * t;
-            const sy = py - dy * t;
-            const ex = px + dx * (1 - t);
-            const ey = py + dy * (1 - t);
-
-            const startColor = sampleRGBA(startPixels, width, height, sx, sy);
-            const endColor = sampleRGBA(endPixels, width, height, ex, ey);
-            const idx = (py * width + px) * 4;
-            const invT = 1 - t;
-
-            outData[idx]     = startColor[0] * invT + endColor[0] * t;
-            outData[idx + 1] = startColor[1] * invT + endColor[1] * t;
-            outData[idx + 2] = startColor[2] * invT + endColor[2] * t;
-            outData[idx + 3] = startColor[3] * invT + endColor[3] * t;
+    let workerMsgId = 0;
+    function processInWorker(startBitmap, endBitmap, width, height, extra, flowOptions) {
+      return new Promise((resolve) => {
+        const id = workerMsgId++;
+        const handler = (e) => {
+          if (e.data.id === id) {
+            opticalFlowWorker.removeEventListener('message', handler);
+            resolve(e.data.outputFrames);
           }
-        }
+        };
+        opticalFlowWorker.addEventListener('message', handler);
+        opticalFlowWorker.postMessage({ id, startBitmap, endBitmap, width, height, extra, flowOptions }, [startBitmap, endBitmap]);
+      });
+    }
+
+    function setStatus(msg) { statusText.textContent = 'Status: ' + msg; }
+    function setProgress(p) { progressBar.style.width = Math.min(100, Math.max(0, p * 100)).toFixed(1) + '%'; }
+
+    async function decodeAudioFile(file) {
+      const arrayBuffer = await file.arrayBuffer();
+      const context = new AudioContext();
+      try {
+        return await context.decodeAudioData(arrayBuffer);
+      } finally {
+        context.close();
       }
     }
 
-    ctx.putImageData(output, 0, 0);
-  }
-</script>
-<script src="background.js"></script>
-<script src="animations.js"></script>
+    async function resampleAudioBuffer(buffer, targetRate) {
+      if (buffer.sampleRate === targetRate) return buffer;
+      const offline = new OfflineAudioContext(buffer.numberOfChannels, Math.ceil(buffer.duration * targetRate), targetRate);
+      const source = offline.createBufferSource();
+      source.buffer = buffer;
+      source.connect(offline.destination);
+      source.start(0);
+      return offline.startRendering();
+    }
+
+    function createAudioDataChunk(buffer, offset, frameCount, timestamp) {
+      const channels = buffer.numberOfChannels;
+      const interleaved = new Float32Array(frameCount * channels);
+      for (let i = 0; i < frameCount; i++) {
+        for (let c = 0; c < channels; c++) {
+          interleaved[i * channels + c] = buffer.getChannelData(c)[offset + i];
+        }
+      }
+      return new AudioData({
+        format: 'f32',
+        sampleRate: buffer.sampleRate,
+        numberOfChannels: channels,
+        numberOfFrames: frameCount,
+        timestamp,
+        data: interleaved
+      });
+    }
+
+    async function encodeAudioBuffer(buffer, muxer) {
+      const sampleRate = 48000;
+      const target = buffer.sampleRate === sampleRate ? buffer : await resampleAudioBuffer(buffer, sampleRate);
+      const channels = target.numberOfChannels;
+      const chunkSize = 2048;
+
+      const audioEncoder = new AudioEncoder({
+        output: (chunk, meta) => muxer.addAudioChunk(chunk, meta),
+        error: (e) => console.error('AudioEncoder error', e)
+      });
+
+      audioEncoder.configure({
+        codec: 'opus',
+        sampleRate,
+        numberOfChannels: channels,
+        bitrate: 128000
+      });
+
+      const frames = target.length;
+      for (let offset = 0; offset < frames; offset += chunkSize) {
+        const frameCount = Math.min(chunkSize, frames - offset);
+        const timestamp = Math.round((offset / sampleRate) * 1_000_000);
+        const audioData = createAudioDataChunk(target, offset, frameCount, timestamp);
+        audioEncoder.encode(audioData);
+        audioData.close();
+      }
+
+      await audioEncoder.flush();
+      audioEncoder.close();
+    }
+
+    function lockButtonsAtStartup() {
+      renderBtn.disabled = true;
+      cancelBtn.disabled = true;
+      setStatus('Loading');
+
+      const unlock = () => {
+        renderBtn.disabled = !videoUpload.files.length;
+        cancelBtn.disabled = true;
+        setStatus('Waiting for video');
+      };
+
+      if (document.readyState === 'complete') {
+        unlock();
+      } else {
+        window.addEventListener('load', unlock, { once: true });
+      }
+    }
+
+    lockButtonsAtStartup();
+
+    function once(el, evt) {
+      return new Promise((resolve, reject) => {
+        const ok = () => { el.removeEventListener(evt, ok); el.removeEventListener('error', err); resolve(); };
+        const err = () => { el.removeEventListener(evt, ok); el.removeEventListener('error', err); reject(new Error('media error')); };
+        el.addEventListener(evt, ok);
+        el.addEventListener('error', err);
+      });
+    }
+
+    extraFrames.addEventListener('input', () => {
+      bitrateDisplay.textContent = (parseInt(extraFrames.value) + 1) * originalBitrate;
+      extraFramesVal.textContent = extraFrames.value;
+      sourceFpsDisplay.textContent = (parseInt(extraFrames.value) + 1) * detectedFps;
+    });
+
+    videoUpload.addEventListener('change', async () => {
+      const file = videoUpload.files[0];
+      if (!file) return;
+      if (videoURL) URL.revokeObjectURL(videoURL);
+      videoURL = URL.createObjectURL(file);
+
+      videoPlayer.src = videoURL;
+      hiddenVideo.src = videoURL;
+
+      setStatus('Loading metadata…');
+      setProgress(0);
+
+      try {
+        await once(videoPlayer, 'loadedmetadata');
+        await once(hiddenVideo, 'loadedmetadata');
+        decodedAudioBuffer = await decodeAudioFile(file);
+      } catch (error) {
+        decodedAudioBuffer = null;
+      }
+
+      workCanvas.width = videoPlayer.videoWidth;
+      workCanvas.height = videoPlayer.videoHeight;
+
+      detectedFps = await estimateVideoFramerate(hiddenVideo);
+      sourceFpsDisplay.textContent = (detectedFps * (parseInt(extraFrames.value) + 1)).toFixed(1);
+      const estimatedBitrate = estimateBitrateMbps(file, hiddenVideo.duration);
+      originalBitrate = estimatedBitrate;
+      bitrateDisplay.textContent = originalBitrate * (parseInt(extraFrames.value) + 1);
+
+      setStatus(`Loaded: ${file.name}  |  ${hiddenVideo.videoWidth}×${hiddenVideo.videoHeight}  |  ${hiddenVideo.duration.toFixed(2)}s | Input bitrate: ${originalBitrate} Mbps`);
+      renderBtn.disabled = false;
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      cancelled = true;
+      cancelBtn.disabled = true;
+      setStatus('Cancelling render');
+    });
+
+    renderBtn.addEventListener('click', startRender);
+
+    async function startRender() {
+      if (!videoURL) { setStatus('Please load a video first'); return; }
+
+      window.setBackgroundEnabled?.(false);
+      cancelled = false;
+      renderBtn.disabled = true;
+      cancelBtn.disabled = false;
+      setProgress(0);
+
+      const extra = parseInt(extraFrames.value, 10);
+      const srcFps = detectedFps || 30;
+      const outFps = srcFps * (extra + 1);
+
+      const preserveBitrate = Math.round(originalBitrate * outFps / srcFps);
+      bitrateDisplay.textContent = preserveBitrate;
+
+      setStatus(`Starting render…\nUsing bitrate: ${preserveBitrate} Mbps`);
+
+      const W = hiddenVideo.videoWidth;
+      const H = hiddenVideo.videoHeight;
+      const duration = hiddenVideo.duration;
+      const totalSrc = Math.round(duration * srcFps);
+      const totalOutFrames = totalSrc * (extra + 1);
+
+      const capCanvas = document.createElement('canvas');
+      capCanvas.width = W; capCanvas.height = H;
+      const capCtx = capCanvas.getContext('2d', { willReadFrequently: true });
+
+      if (!supportsWebCodecs || typeof AudioEncoder === 'undefined') {
+        setStatus('WebCodecs audio/video capture is not available in this browser');
+        resetUI();
+        return;
+      }
+
+      workCanvas.hidden = false;
+
+      const hasAudio = decodedAudioBuffer !== null;
+      const muxerOptions = {
+        target: new WebMMuxer.ArrayBufferTarget(),
+        video: {
+          codec: 'V_VP9',
+          width: W,
+          height: H,
+          frameRate: outFps
+        }
+      };
+
+      if (hasAudio) {
+        muxerOptions.audio = {
+          codec: 'A_OPUS',
+          sampleRate: 48000,
+          numberOfChannels: decodedAudioBuffer.numberOfChannels,
+          bitrate: 128000
+        };
+      }
+
+      const muxer = new WebMMuxer.Muxer(muxerOptions);
+      const audioPromise = hasAudio ? encodeAudioBuffer(decodedAudioBuffer, muxer) : Promise.resolve();
+
+      const encoder = new VideoEncoder({
+        output: (chunk, meta) => muxer.addVideoChunk(chunk, meta),
+        error: (e) => console.error('VideoEncoder error ', e)
+      });
+
+      encoder.configure({
+        codec: 'vp09.00.10.08',
+        width: W,
+        height: H,
+        bitrate: preserveBitrate * 1_000_000,
+        framerate: outFps
+      });
+
+      hiddenVideo.currentTime = 0;
+      hiddenVideo.muted = true;
+      await hiddenVideo.play().catch(() => { });
+
+      const flowOptions = {
+        blockSize: Math.max(16, Math.min(32, Math.floor(Math.max(W, H) / 64))),
+        searchRadius: 8
+      };
+
+      // 1. Fetch very first frame
+      hiddenVideo.currentTime = 0;
+      try { await once(hiddenVideo, 'seeked'); } catch { setStatus('Failed to read first frame'); resetUI(); return; }
+      capCtx.drawImage(hiddenVideo, 0, 0, W, H);
+      let prevBitmap = await createImageBitmap(capCanvas);
+
+      let drawnFrames = 0;
+
+      // 2. Loop continuously, shifting prev -> current and clearing memory
+      for (let i = 1; i <= totalSrc; i++) {
+        if (cancelled) break;
+
+        const t = Math.min(duration, i / srcFps);
+        hiddenVideo.currentTime = t;
+        try { await once(hiddenVideo, 'seeked'); } catch { break; }
+
+        capCtx.drawImage(hiddenVideo, 0, 0, W, H);
+        let currentBitmap = await createImageBitmap(capCanvas);
+
+        // Make bitmap copies for worker transfer
+        const prevWorkerBmp = await createImageBitmap(prevBitmap);
+        const currentWorkerBmp = await createImageBitmap(currentBitmap);
+
+        setStatus(`Processing segment ${i}/${totalSrc}`);
+
+        // Interpolate steps in worker thread
+        const interpolatedBitmaps = await processInWorker(prevWorkerBmp, currentWorkerBmp, W, H, extra, flowOptions);
+
+        // Encode results sequentially
+        for (let step = 0; step < interpolatedBitmaps.length; step++) {
+          if (cancelled) break;
+
+          const bmp = interpolatedBitmaps[step];
+          ctx.drawImage(bmp, 0, 0);
+
+          const timestamp = drawnFrames * 1000000 / outFps;
+          const frame = new VideoFrame(workCanvas, { timestamp });
+          encoder.encode(frame, { keyFrame: drawnFrames === 0 });
+          frame.close(); // Immediate memory collection
+          bmp.close();
+
+          drawnFrames++;
+          setProgress(drawnFrames / totalOutFrames);
+          setStatus(
+            `Rendering frame ${drawnFrames}/${totalOutFrames}\n` +
+            `Segment ${i}/${totalSrc}, interp step ${step}/${extra}\n` +
+            `Output: ${outFps} fps`
+          );
+        }
+
+        prevBitmap.close(); // Drop frame A out of memory
+        prevBitmap = currentBitmap; // Move frame B to frame A
+      }
+
+      if (prevBitmap) prevBitmap.close();
+
+      hiddenVideo.pause();
+      await audioPromise;
+
+      await encoder.flush();
+      encoder.close();
+      muxer.finalize();
+
+      if (cancelled) { finishCancelled(); return; }
+
+      const blob = new Blob([muxer.target.buffer], { type: 'video/webm' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `interpolated_${srcFps}to${outFps}fps_${Date.now()}.webm`;
+      a.click();
+      setStatus(`Done!\n${srcFps}fps  →  ${outFps}fps`);
+
+      setProgress(1);
+      resetUI();
+    }
+
+    function finishCancelled() {
+      setStatus('Render cancelled.');
+      setProgress(0);
+      resetUI();
+    }
+
+    function resetUI() {
+      renderBtn.disabled = false;
+      cancelBtn.disabled = true;
+      workCanvas.hidden = true;
+      window.setBackgroundEnabled?.(true);
+    }
+
+    function estimateVideoFramerate(video) {
+      return new Promise(resolve => {
+        const fallback = () => {
+          let lastTime = video.currentTime;
+          let frames = 0;
+          const start = performance.now();
+          function loop() {
+            if (cancelled) return resolve(30);
+            const now = performance.now();
+            if (video.currentTime !== lastTime) {
+              frames++;
+              lastTime = video.currentTime;
+            }
+            if (now - start < 1000) {
+              requestAnimationFrame(loop);
+            } else {
+              resolve(Math.max(24, Math.min(120, Math.round(frames))));
+            }
+          }
+          video.currentTime = 0;
+          video.muted = true;
+          video.play().then(() => requestAnimationFrame(loop)).catch(() => resolve(30));
+        };
+
+        if (typeof video.requestVideoFrameCallback === 'function') {
+          let lastMediaTime = null;
+          let samples = [];
+          let count = 0;
+
+          const onFrame = (_, meta) => {
+            if (lastMediaTime !== null) {
+              samples.push(meta.mediaTime - lastMediaTime);
+            }
+            lastMediaTime = meta.mediaTime;
+            count += 1;
+            if (count < 12) {
+              video.requestVideoFrameCallback(onFrame);
+            } else {
+              const avg = samples.length ? samples.reduce((a, b) => a + b, 0) / samples.length : 1 / 30;
+              resolve(Math.max(24, Math.min(120, Math.round(1 / avg))));
+            }
+          };
+
+          video.currentTime = 0;
+          video.muted = true;
+          video.play().then(() => video.requestVideoFrameCallback(onFrame)).catch(fallback);
+        } else {
+          fallback();
+        }
+      });
+    }
+
+    function estimateBitrateMbps(file, duration) {
+      if (!duration || duration <= 0) return 50;
+      return Math.max(1, Math.round((file.size * 8) / duration / 1_000_000));
+    }
+  </script>
+  <script src="background.js"></script>
+  <script src="animations.js"></script>
 </body>
+
 </html>
